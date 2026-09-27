@@ -4,6 +4,7 @@ import { engineRoom } from "@/engine/participants";
 
 import { useEffect } from "react";
 import { useRoom } from "@/providers/RoomContext";
+import { useGameViewState } from "@/hooks/useGameViewState";
 import type { UndercoverGameState } from "@/engine/whoIsUndercover";
 import { HostGameControls } from "@/components/game/HostGameControls";
 import { HostShell } from "@/components/game/HostShell";
@@ -14,7 +15,8 @@ import { sfx } from "@/lib/sound";
 
 export default function HostUndercover() {
   const { room } = useRoom();
-  const state = room?.gameState as UndercoverGameState | undefined;
+  // Host gets the full hydrated state (privateHost ⊔ public).
+  const state = useGameViewState<UndercoverGameState>();
   const players = room ? engineRoom(room).players : {};
 
   const phase = state?.phase;

@@ -17,6 +17,7 @@ import { RoundTimer } from "@/components/game/RoundTimer";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { PlayShell } from "@/components/game/PlayShell";
+import { useGameViewState } from "@/hooks/useGameViewState";
 import { vibrate } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,17 @@ const BRUSHES = [
   { label: "中", width: 6 },
   { label: "粗", width: 12 },
 ];
-const STREAM_MS = 100;
+/** Stream interval — longer than before so RTDB sees fewer partial strokes. */
+const STREAM_MS = 140;
+/** Min distance (canvas units) before appending a point — drops micro-jitter. */
+const MIN_POINT_DIST = 3.5;
+
+const DRAWER_TIPS = [
+  "畫輪廓，別寫字！",
+  "從最大形狀開始",
+  "用顏色區分部件",
+  "留白也是重點",
+];
 interface ActiveStroke {
   stroke: StrokeLine;
   version: number;
@@ -36,7 +47,7 @@ interface ActiveStroke {
 export default function PlayDrawAndGuess() {
   const { room, player, submitAction } = useRoom();
   const { toast } = useToast();
-  const state = room?.gameState as DrawGameState | undefined;
+  const state = useGameViewState<DrawGameState>();
   const [guessInput, setGuessInput] = useState("");
   const [pendingGuess, setPendingGuess] = useState(false);
   const [color, setColor] = useState(DRAW_COLORS[0]);
@@ -77,6 +88,10 @@ export default function PlayDrawAndGuess() {
   const drawing = state.phase === "drawing";
   const canDraw = drawing && amDrawer && state.strokes.length < MAX_STROKES;
   const lastGuess = state.guesses[player.id];
+  const promptWord = state.prompt?.word ?? "";
+  const promptCategory =
+    state.prompt?.category || (state as { promptCategory?: string }).promptCategory || "";
+  const promptLen = Array.from(promptWord).length;
 
   const flush = (current: ActiveStroke) => {
     if (timer.current) {
@@ -124,8 +139,11 @@ export default function PlayDrawAndGuess() {
     if (!current || !e.isPrimary) return;
     const [x, y] = coords(e);
     let points = current.stroke.points;
-    if (Math.hypot(x - points[points.length - 2], y - points[points.length - 1]) < 2) return;
+    const dist = Math.hypot(x - points[points.length - 2], y - points[points.length - 1]);
+    // Drop micro-jitter so long strokes stay under the point cap longer.
+    if (dist < MIN_POINT_DIST) return;
     if (points.length >= MAX_STROKE_POINTS) {
+      // Decimate every other point pair when we hit the wire limit.
       points = points.filter((_, index) => Math.floor(index / 2) % 2 === 0);
     }
     current.stroke = { ...current.stroke, revision: current.stroke.revision + 1, points: [...points, x, y] };
@@ -174,6 +192,7 @@ export default function PlayDrawAndGuess() {
       <div className="space-y-4 pt-4">
         <RoundTimer
           compact
+          haptic
           timeLeft={state.timeLeft}
           total={drawing ? state.drawDuration : state.phase === "briefing" ? 3 : 5}
           endLabel={drawing ? "作畫結束" : "下一階段"}
@@ -183,7 +202,7 @@ export default function PlayDrawAndGuess() {
             <p className="mb-2 text-sm text-pink-200">
               {amDrawer ? "準備輪到你畫！" : `${room.players[state.drawerPlayerId]?.nickname ?? "畫家"} 準備作畫`}
             </p>
-            {amDrawer && <h2 className="mb-3 text-3xl font-black">{state.prompt.word}</h2>}
+            {amDrawer && <h2 className="mb-3 text-3xl font-black">{promptWord || "？"}</h2>}
             <p className="text-sm leading-relaxed text-white/70">
               {amDrawer
                 ? "用圖畫表達，別寫出答案！每有人猜中，你得 5 分。"
@@ -196,13 +215,18 @@ export default function PlayDrawAndGuess() {
             <header className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
               {amDrawer ? (
                 <>
-                  <p className="text-xs text-pink-200">只有你看到的題目 · {state.prompt.category}</p>
-                  <h2 className="mt-1 text-2xl font-black">{state.prompt.word}</h2>
+                  <p className="text-xs text-pink-200">
+                    只有你看到的題目 · {promptCategory || "題目"}
+                    <span className="ml-2 rounded-full border border-pink-400/30 bg-pink-500/10 px-2 py-0.5 text-[10px] text-pink-100">
+                      {DRAWER_TIPS[state.currentRound % DRAWER_TIPS.length]}
+                    </span>
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black">{promptWord || "？"}</h2>
                 </>
               ) : (
                 <>
                   <p className="text-sm text-white/70">
-                    提示：{state.prompt.category} · {Array.from(state.prompt.word).length} 個字
+                    提示：{promptCategory} · {promptLen || "?"} 個字
                   </p>
                   <p className="mt-2 text-2xl tracking-widest text-pink-200">
                     {drawHint(state, room.settings.difficulty)}
@@ -336,7 +360,7 @@ export default function PlayDrawAndGuess() {
             <p className="text-sm text-pink-200">
               {state.roundReason === "disconnected" ? "玩家離線，本回合提早結束" : "答案揭曉"}
             </p>
-            <h2 className="my-3 text-3xl font-black">{state.prompt.word}</h2>
+            <h2 className="my-3 text-3xl font-black">{promptWord || "？"}</h2>
             <p className="text-lg font-bold text-emerald-300">本回合 +{state.roundScores[player.id] ?? 0} 分</p>
             <p className="mt-3 text-sm text-white/60">
               {state.currentRound < state.totalRounds ? "下一位畫家準備中…" : "準備結算…"}

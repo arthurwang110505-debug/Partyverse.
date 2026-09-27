@@ -14,7 +14,8 @@ import { Modal } from "@/components/ui/Modal";
 import { Confetti } from "@/components/game/Confetti";
 import { FloatingReactions } from "@/components/game/FloatingReactions";
 import { useCountUp } from "@/hooks/useCountUp";
-import { vibrate } from "@/lib/sound";
+import { sfx, vibrate } from "@/lib/sound";
+import { buildMatchRecap, formatMatchReport } from "@/lib/matchRecap";
 import { participantIds } from "@/engine/participants";
 import { cn, formatTime } from "@/lib/utils";
 
@@ -43,7 +44,7 @@ function AnimatedScore({ value, className }: { value: number; className?: string
 
 export default function ResultsClient({ roomCode }: Props) {
   const router = useRouter();
-  const { room, player, isHost, rematch, endRoom, switchGame, sendReaction } = useRoom();
+  const { room, player, isHost, rematch, endRoom, switchGame, sendReaction, voteNextGame } = useRoom();
   const [restarting, setRestarting] = useState(false);
   const [error, setError] = useState("");
   const [confirmingEnd, setConfirmingEnd] = useState(false);
@@ -82,6 +83,7 @@ export default function ResultsClient({ roomCode }: Props) {
 
   const totalScore = ranked.reduce((sum, r) => sum + r.score, 0);
   const leader = ranked[0];
+  const recap = useMemo(() => (room ? buildMatchRecap(room) : []), [room]);
 
   const handleEnd = async () => {
     try {
@@ -104,23 +106,15 @@ export default function ResultsClient({ roomCode }: Props) {
   };
 
   const handleCopyScores = async () => {
-    if (ranked.length === 0) return;
+    if (!room || ranked.length === 0) return;
     vibrate(15);
-    const lines = [
-      `🏆 PARTYVERSE 派對排行榜 · ${game?.name ?? "遊戲"}`,
-      `房間代碼：${roomCode}`,
-      `------------------------`,
-      ...ranked.map(
-        (r) =>
-          `${rankOf(r) === 0 ? "🥇" : rankOf(r) === 1 ? "🥈" : rankOf(r) === 2 ? "🥉" : `#${rankOf(r) + 1}`} ${r.avatar} ${r.nickname}：${r.score} 分`,
-      ),
-    ];
+    sfx.playPop();
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
+      await navigator.clipboard.writeText(formatMatchReport(room, game?.name ?? "遊戲"));
       setCopiedScores(true);
       setTimeout(() => setCopiedScores(false), 2000);
     } catch {
-      setError("無法複製戰績");
+      setError("無法複製戰報");
     }
   };
 
@@ -132,13 +126,34 @@ export default function ResultsClient({ roomCode }: Props) {
   if (!room) return null;
 
   const playableGames = GAMES.filter((g) => isPlayable(g.id) && g.id !== room.gameId);
+  const nextVotes = room.nextGameVotes ?? {};
+  const myNextVote = player ? nextVotes[player.id] : undefined;
+  const voteTally = playableGames
+    .map((g) => ({
+      game: g,
+      count: Object.values(nextVotes).filter((id) => id === g.id).length,
+    }))
+    .filter((row) => row.count > 0)
+    .sort((a, b) => b.count - a.count);
+  const topVoted = voteTally[0];
+
+  const handleVoteNext = async (gameId: string) => {
+    vibrate(12);
+    try {
+      await voteNextGame(gameId);
+      sfx.playPop();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "投票失敗");
+    }
+  };
 
   return (
     <main
       className="min-h-[100dvh] bg-ink p-4 pb-safe text-white relative"
       style={{ "--game-accent": game?.color, "--game-gradient": game?.gradient } as CSSProperties}
     >
-      {winners.length > 0 && <Confetti />}
+      {/* Always celebrate the end of a night — even cooperative near-misses. */}
+      <Confetti />
       <FloatingReactions />
 
       <div className="mx-auto max-w-lg pt-8 relative z-10">
@@ -174,9 +189,44 @@ export default function ResultsClient({ roomCode }: Props) {
             ].map((stat) => (
               <div key={stat.label} className="glass rounded-xl border border-white/10 p-3 text-center">
                 <p className="text-lg font-bold tabular-nums">{stat.value}</p>
-                <p className="text-[11px] text-white/40">{stat.label}</p>
+                <p className="text-[11px] text-white/50">{stat.label}</p>
               </div>
             ))}
+          </section>
+        )}
+
+        {recap.length > 0 && (
+          <section className="mb-6" aria-labelledby="recap-heading">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 id="recap-heading" className="text-sm font-semibold text-white/80">
+                ✨ 本場花絮
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void handleCopyScores()}
+                aria-label="複製戰報"
+              >
+                <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                {copiedScores ? "已複製戰報" : "複製戰報"}
+              </Button>
+            </div>
+            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {recap.map((fact) => (
+                <li
+                  key={fact.id}
+                  className="glass flex items-start gap-3 rounded-xl border border-white/10 p-3"
+                >
+                  <span className="text-2xl" aria-hidden="true">
+                    {fact.icon}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-bold text-cyan-200">{fact.title}</span>
+                    <span className="block truncate text-sm text-white/80">{fact.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 
@@ -322,6 +372,43 @@ export default function ResultsClient({ roomCode }: Props) {
 
         <ErrorNote className="mb-4">{error}</ErrorNote>
 
+        {/* Next-game straw poll — host still decides, but sees the room's mood. */}
+        <section className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4" aria-labelledby="next-game-heading">
+          <h2 id="next-game-heading" className="mb-1 text-sm font-semibold text-white/85">
+            下一局想玩什麼？
+          </h2>
+          <p className="mb-3 text-xs text-white/55">
+            投一票給房主參考
+            {topVoted ? ` · 目前最多：${topVoted.game.icon} ${topVoted.game.name}（${topVoted.count}）` : ""}
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {playableGames.slice(0, 9).map((g) => {
+              const count = Object.values(nextVotes).filter((id) => id === g.id).length;
+              const selected = myNextVote === g.id;
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => void handleVoteNext(g.id)}
+                  className={cn(
+                    "flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-xs transition-all active:scale-95",
+                    selected
+                      ? "border-cyan-400/60 bg-cyan-500/20 text-cyan-100"
+                      : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10",
+                  )}
+                >
+                  <span className="text-lg" aria-hidden="true">
+                    {g.icon}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">{g.name}</span>
+                  {count > 0 && <span className="tabular-nums text-white/50">{count}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         <div className="space-y-2.5">
           {isHost ? (
             <>
@@ -343,6 +430,18 @@ export default function ResultsClient({ roomCode }: Props) {
               >
                 <RotateCcw className="h-4 w-4" aria-hidden="true" /> 再玩一次（回大廳）
               </Button>
+
+              {topVoted && (
+                <Button
+                  variant="ghost"
+                  size="md"
+                  className="w-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
+                  onClick={() => void handleSwitchGame(topVoted.game.id)}
+                >
+                  <Gamepad2 className="h-4 w-4" aria-hidden="true" />
+                  聽從投票：{topVoted.game.icon} {topVoted.game.name}
+                </Button>
+              )}
 
               <Button
                 variant="ghost"

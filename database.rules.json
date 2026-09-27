@@ -1,0 +1,69 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "rooms": {
+      "$roomCode": {
+        ".read": "auth != null && (data.child('players').child(auth.uid).exists() || !data.exists())",
+
+        ".write": "auth != null && (!data.exists() || data.child('hostPlayerId').val() === auth.uid || data.child('players').child(auth.uid).exists())",
+
+        ".validate": "newData.hasChildren(['id', 'gameId', 'hostPlayerId', 'status', 'players', 'settings', 'createdAt']) && newData.child('id').val() === $roomCode",
+
+        "id": { ".validate": "newData.isString() && newData.val().length === 5" },
+        "gameId": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 40" },
+        "hostPlayerId": { ".validate": "newData.isString()" },
+        "status": {
+          ".validate": "newData.val() === 'LOBBY' || newData.val() === 'PLAYING' || newData.val() === 'RESULTS'"
+        },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "startedAt": { ".validate": "!newData.exists() || newData.isNumber()" },
+        "finishedAt": { ".validate": "!newData.exists() || newData.isNumber()" },
+        "lastTickAt": { ".validate": "!newData.exists() || newData.isNumber()" },
+        "expiresAt": { ".validate": "!newData.exists() || newData.isNumber()" },
+        "settings": {
+          ".write": "auth != null && data.parent().child('hostPlayerId').val() === auth.uid",
+          ".validate": "newData.hasChildren(['timer', 'difficulty', 'rounds', 'soundEnabled', 'ageMode'])"
+        },
+
+        "players": {
+          "$playerId": {
+            ".write": "auth != null && (auth.uid === $playerId || root.child('rooms').child($roomCode).child('hostPlayerId').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['id', 'nickname', 'avatar', 'isHost', 'isConnected', 'score']) && newData.child('id').val() === $playerId && newData.child('nickname').isString() && newData.child('nickname').val().length > 0 && newData.child('nickname').val().length <= 16",
+
+            "isReady": {
+              ".write": "auth != null && auth.uid === $playerId"
+            },
+            "isConnected": {
+              ".write": "auth != null && (auth.uid === $playerId || root.child('rooms').child($roomCode).child('hostPlayerId').val() === auth.uid)"
+            }
+          }
+        },
+
+        "gameState": {
+          ".write": "auth != null && (data.parent().child('hostPlayerId').val() === auth.uid || data.parent().child('players').child(auth.uid).exists())"
+        },
+
+        "reactions": {
+          "$reactionId": {
+            ".write": "auth != null && data.parent().parent().child('players').child(auth.uid).exists()",
+            ".validate": "newData.hasChildren(['id', 'emoji', 'nickname', 'at'])"
+          }
+        },
+
+        "privateHost": {
+          ".read": "auth != null && data.parent().child('hostPlayerId').val() === auth.uid",
+          ".write": "auth != null && data.parent().child('hostPlayerId').val() === auth.uid"
+        },
+
+        "private": {
+          "$playerId": {
+            ".read": "auth != null && (auth.uid === $playerId || data.parent().parent().child('hostPlayerId').val() === auth.uid)",
+            ".write": "auth != null && data.parent().parent().child('hostPlayerId').val() === auth.uid"
+          }
+        }
+      }
+    }
+  }
+}

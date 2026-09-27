@@ -28,6 +28,24 @@ export const DRAW_PROMPTS: DrawPrompt[] = [
   { id: "d16", word: "彩虹", category: "自然" },
   { id: "d17", word: "滑板", category: "運動" },
   { id: "d18", word: "爆米花", category: "食物" },
+  { id: "d19", word: "捷運", category: "交通" },
+  { id: "d20", word: "夜市", category: "生活" },
+  { id: "d21", word: "珍珠奶茶", category: "食物", aliases: ["珍奶", "奶茶"] },
+  { id: "d22", word: "恐龍", category: "動物" },
+  { id: "d23", word: "火箭", category: "交通" },
+  { id: "d24", word: "吉他", category: "音樂" },
+  { id: "d25", word: "冰淇淋", category: "食物" },
+  { id: "d26", word: "超人", category: "卡通角色" },
+  { id: "d27", word: "腳踏車", category: "交通", aliases: ["自行車"] },
+  { id: "d28", word: "大象", category: "動物" },
+  { id: "d29", word: "壽司", category: "食物" },
+  { id: "d30", word: "瀑布", category: "自然" },
+  { id: "d31", word: "機器人", category: "科技" },
+  { id: "d32", word: "棒球", category: "運動" },
+  { id: "d33", word: "鳳梨", category: "食物", aliases: ["菠蘿"] },
+  { id: "d34", word: "帳篷", category: "戶外" },
+  { id: "d35", word: "幽靈", category: "幻想", aliases: ["鬼"] },
+  { id: "d36", word: "蛋糕", category: "食物" },
 ];
 
 export type DrawPhase = "briefing" | "drawing" | "reveal" | "result";
@@ -102,10 +120,17 @@ export function normalizeGuess(value: string): string {
     .toLocaleLowerCase()
     .replace(/[\s\p{P}\p{Cf}]/gu, "");
 }
-export function drawHint(state: DrawGameState, difficulty = "easy"): string {
-  const letters = Array.from(state.prompt.word);
+export function drawHint(
+  state: DrawGameState & { promptLength?: number },
+  difficulty = "easy",
+): string {
+  const word = state.prompt?.word ?? "";
+  const length = word ? Array.from(word).length : Number(state.promptLength) || 0;
+  if (length <= 0) return "● ● ●";
+  const letters = word ? Array.from(word) : Array.from({ length }, () => "");
   const hintAt = difficulty === "easy" ? state.drawDuration / 2 : state.drawDuration / 4;
-  const revealFirst = difficulty !== "hard" && state.timeLeft <= hintAt && letters.length > 1;
+  const revealFirst =
+    Boolean(word) && difficulty !== "hard" && state.timeLeft <= hintAt && letters.length > 1;
   return letters.map((letter, i) => (i === 0 && revealFirst ? letter : "●")).join(" ");
 }
 export function strokePath(points: number[]): string {

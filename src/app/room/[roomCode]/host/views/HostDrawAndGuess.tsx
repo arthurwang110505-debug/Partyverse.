@@ -1,6 +1,7 @@
 "use client";
 
 import { useRoom } from "@/providers/RoomContext";
+import { useGameViewState } from "@/hooks/useGameViewState";
 import { drawHint, type DrawGameState } from "@/engine/drawAndGuess";
 import { HostShell } from "@/components/game/HostShell";
 import { RoundTimer } from "@/components/game/RoundTimer";
@@ -11,7 +12,9 @@ import { participantIds } from "@/engine/participants";
 
 export default function HostDrawAndGuess() {
   const { room } = useRoom();
-  const state = room?.gameState as DrawGameState | undefined;
+  // Host hydrates privateHost so drawHint can reveal first letter on schedule.
+  // The word itself is only rendered during reveal/result (see below).
+  const state = useGameViewState<DrawGameState>();
   if (!state || !room) return null;
   const ids = participantIds(room);
   const drawer = room.players[state.drawerPlayerId];

@@ -2,60 +2,68 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useRoom } from "@/providers/RoomContext";
-import { useToast } from "@/providers/ToastProvider";
+import { useSubmitAction } from "@/hooks/useSubmitAction";
 import type { BattleGameState } from "@/engine/realBattle";
 import { PlayShell } from "@/components/game/PlayShell";
 import { vibrate } from "@/lib/sound";
 
-/**
- * Held-direction repeat interval. Each move is a whole-room transaction, so
- * this caps the write rate per player (~5/sec) instead of carpet-bombing the
- * room store while a pad button is held.
- */
-const REPEAT_MS = 200;
+/** How often we flush coalesced hold-steps to the room (cuts RTDB writes under hold). */
+const FLUSH_MS = 180;
 
 export default function PlayRealBattle() {
-  const { room, player, submitAction } = useRoom();
-  const { toast } = useToast();
+  const { room, player } = useRoom();
+  const submit = useSubmitAction();
   const state = room?.gameState as BattleGameState | undefined;
   const repeatTimer = useRef<number | null>(null);
-  const failedOnce = useRef(false);
+  const pending = useRef<{ dx: number; dy: number; steps: number } | null>(null);
+  const flushing = useRef(false);
+
+  const flush = useCallback(async () => {
+    if (flushing.current) return;
+    const batch = pending.current;
+    if (!batch || batch.steps <= 0) return;
+    pending.current = null;
+    flushing.current = true;
+    vibrate(8);
+    await submit(
+      { type: "move", dx: batch.dx, dy: batch.dy, steps: Math.min(4, batch.steps) },
+      { failMessage: "操作沒有送出，檢查連線", throttleMs: 5000 },
+    );
+    flushing.current = false;
+  }, [submit]);
 
   const stopRepeating = useCallback(() => {
     if (repeatTimer.current !== null) {
       window.clearInterval(repeatTimer.current);
       repeatTimer.current = null;
     }
-  }, []);
+    void flush();
+  }, [flush]);
   useEffect(() => stopRepeating, [stopRepeating]);
   useEffect(() => {
     if (state?.phase !== "battle") stopRepeating();
   }, [state?.phase, stopRepeating]);
   if (!state || !player) return null;
 
-  const move = async (dx: number, dy: number) => {
-    vibrate(8);
-    try {
-      await submitAction({ type: "move", dx, dy });
-    } catch {
-      // Moves fire several times per second — surface the first failure, then
-      // stay quiet instead of carpet-bombing the screen with toasts.
-      if (!failedOnce.current) {
-        failedOnce.current = true;
-        toast("操作沒有送出，檢查連線");
-        window.setTimeout(() => {
-          failedOnce.current = false;
-        }, 5000);
-      }
+  const queueMove = (dx: number, dy: number) => {
+    const cur = pending.current;
+    if (cur && cur.dx === dx && cur.dy === dy) {
+      cur.steps = Math.min(4, cur.steps + 1);
+    } else {
+      pending.current = { dx, dy, steps: 1 };
     }
   };
 
-  /** Press-and-hold: tap moves once, holding keeps walking. */
+  /** Press-and-hold: coalesce steps, flush on an interval to cut RTDB writes. */
   const startRepeating = (dx: number, dy: number) => {
     if (state.phase !== "battle") return;
     stopRepeating();
-    void move(dx, dy);
-    repeatTimer.current = window.setInterval(() => void move(dx, dy), REPEAT_MS);
+    queueMove(dx, dy);
+    void flush();
+    repeatTimer.current = window.setInterval(() => {
+      queueMove(dx, dy);
+      void flush();
+    }, FLUSH_MS);
   };
 
   const padButtons: Array<{ dx: number; dy: number; glyph: string; label: string }> = [
@@ -72,7 +80,11 @@ export default function PlayRealBattle() {
   const padHandlers = (dx: number, dy: number) => ({
     disabled: state.phase !== "battle",
     onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (e.detail === 0) void move(dx, dy);
+      // Keyboard / accessibility activation (pointer path uses onPointerDown).
+      if (e.detail === 0) {
+        queueMove(dx, dy);
+        void flush();
+      }
     },
     onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
       e.preventDefault();

@@ -115,7 +115,7 @@ export default function Home() {
 
           {/* Cyberpunk Terminal Description */}
           <p className="mx-auto mt-6 mb-10 max-w-2xl font-mono text-sm leading-relaxed text-cyan-100/70 sm:text-base md:text-lg">
-            一間房，十款遊戲。電視就是舞台，手機就是手把。
+            一間房，16 款遊戲。電視就是舞台，手機就是手把。
             <br />
             免下載、免註冊，揪朋友一起開趴！
           </p>
@@ -489,7 +489,7 @@ export default function Home() {
               <span className="text-cyan-400 drop-shadow-[0_0_8px_#00f0ff]">PARTY</span>
               <span className="text-[#ff007f] drop-shadow-[0_0_8px_#ff007f]">VERSE</span>
             </p>
-            <p className="text-xs font-mono text-white/50">One Room. Ten Games. Infinite Cyber Chaos.</p>
+            <p className="text-xs font-mono text-white/50">One Room. 16 Games. Infinite Cyber Chaos.</p>
           </div>
           <div className="flex items-center gap-4 text-xs font-mono text-white/40">
             <span>SYS_VERSION: 2.1.0</span>

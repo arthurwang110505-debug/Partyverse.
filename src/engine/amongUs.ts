@@ -10,6 +10,10 @@ export const TASK_TYPES = [
   { id: "code", name: "輸入密碼", icon: "🔢" },
   { id: "fuel", name: "加油", icon: "⛽" },
   { id: "shields", name: "啟動護盾", icon: "🛡️" },
+  { id: "scan", name: "身體掃描", icon: "📡" },
+  { id: "sample", name: "樣本分析", icon: "🧪" },
+  { id: "card", name: "刷卡通行", icon: "💳" },
+  { id: "asteroids", name: "打隕石", icon: "☄️" },
 ] as const;
 
 export const TASKS_PER_PLAYER = 4;

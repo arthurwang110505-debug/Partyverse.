@@ -2,6 +2,7 @@
 
 import type { RoomSettings } from "@/types";
 import { gameSettingsProfile } from "@/constants/gameSettings";
+import { detectPace, PACE_PRESETS, settingsForPace, type PaceId } from "@/constants/pacePresets";
 import { cn } from "@/lib/utils";
 
 export function RoomSettingsFields({
@@ -14,8 +15,39 @@ export function RoomSettingsFields({
   onChange: (patch: Partial<RoomSettings>) => void;
 }) {
   const profile = gameSettingsProfile(gameId);
+  const activePace = detectPace(gameId, settings);
+
+  const applyPace = (pace: PaceId) => {
+    onChange(settingsForPace(gameId, pace));
+  };
+
   return (
     <div className="space-y-5">
+      <fieldset>
+        <legend className="mb-2 text-sm font-medium text-white/75">節奏預設</legend>
+        <div className="grid grid-cols-3 gap-2">
+          {PACE_PRESETS.map((pace) => (
+            <button
+              key={pace.id}
+              type="button"
+              aria-pressed={activePace === pace.id}
+              onClick={() => applyPace(pace.id)}
+              className={cn(
+                "min-h-11 rounded-xl border px-2 py-2 text-sm font-semibold",
+                activePace === pace.id
+                  ? "border-cyan-400/60 bg-cyan-500/20 text-cyan-100"
+                  : "border-white/10 bg-white/5 text-white/65",
+              )}
+            >
+              {pace.label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-white/60">
+          {PACE_PRESETS.find((p) => p.id === activePace)?.hint ?? "自訂秒數與回合，或點上方預設一鍵套用。"}
+        </p>
+      </fieldset>
+
       {profile.hasDifficulty && (
         <fieldset>
           <legend className="mb-2 text-sm font-medium text-white/75">難度</legend>
@@ -46,7 +78,9 @@ export function RoomSettingsFields({
           <p className="mt-2 text-xs text-white/60">
             {gameId === "drawandguess"
               ? "輕鬆模式半程給首字提示；普通最後四分之一給提示；挑戰使用較長詞彙、不提示首字。"
-              : "難度越高，引信越短；連續傳遞會出現更難的題目。"}
+              : gameId === "whoisundercoveragent"
+                ? "輕鬆＝差很多的詞對；挑戰＝幾乎同義、需要更小心描述。"
+                : "難度越高，引信越短；連續傳遞會出現更難的題目。"}
           </p>
         </fieldset>
       )}

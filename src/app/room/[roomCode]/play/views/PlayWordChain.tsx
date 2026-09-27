@@ -39,7 +39,7 @@ export default function PlayWordChain() {
       await submitAction(action);
       if (kind === "submit") setWord("");
     } catch {
-      toast("送出了問題，請再試一次");
+      toast("送出失敗，請再試一次");
     } finally {
       setPendingAction(null);
     }
@@ -105,7 +105,7 @@ export default function PlayWordChain() {
             </div>
 
             <div className="mt-4">
-              <RoundTimer timeLeft={state.timeLeft} total={room?.settings.timer ?? 20} endLabel="回合結束" compact />
+              <RoundTimer timeLeft={state.timeLeft} total={room?.settings.timer ?? 20} endLabel="回合結束" compact haptic />
             </div>
           </>
         )}
@@ -141,7 +141,7 @@ export default function PlayWordChain() {
               </p>
             )}
             <div className="mt-5">
-              <RoundTimer timeLeft={state.timeLeft} total={4} endLabel="截止" compact />
+              <RoundTimer timeLeft={state.timeLeft} total={4} endLabel="截止" compact haptic />
             </div>
           </>
         )}

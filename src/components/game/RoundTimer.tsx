@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { vibrate } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
 interface RoundTimerProps {
@@ -12,6 +13,8 @@ interface RoundTimerProps {
   className?: string;
   /** Render a compact version (used inside shells, not the big TV board). */
   compact?: boolean;
+  /** Buzz the phone on the final 5 / 3 / 1 seconds (controller only). */
+  haptic?: boolean;
 }
 
 /**
@@ -21,12 +24,20 @@ interface RoundTimerProps {
  * and drown everything), so the visual bar is quiet and a sr-only companion
  * announces only the milestones: 10s, 5s, and time-up.
  */
-export function RoundTimer({ timeLeft, total, endLabel = "時間到", className, compact = false }: RoundTimerProps) {
+export function RoundTimer({
+  timeLeft,
+  total,
+  endLabel = "時間到",
+  className,
+  compact = false,
+  haptic = false,
+}: RoundTimerProps) {
   const pct = total > 0 ? Math.max(0, Math.min(100, (timeLeft / total) * 100)) : 0;
   const critical = timeLeft <= 5;
 
   const [announcement, setAnnouncement] = useState("");
   const lastAnnounced = useRef(-1);
+  const lastHaptic = useRef(-1);
   useEffect(() => {
     const milestone = timeLeft === 10 || timeLeft === 5 ? timeLeft : timeLeft === 0 ? 0 : -1;
     if (milestone >= 0 && milestone !== lastAnnounced.current) {
@@ -34,6 +45,14 @@ export function RoundTimer({ timeLeft, total, endLabel = "時間到", className,
       setAnnouncement(milestone === 0 ? endLabel : `剩 ${milestone} 秒`);
     }
   }, [timeLeft, endLabel]);
+
+  useEffect(() => {
+    if (!haptic) return;
+    if ((timeLeft === 5 || timeLeft === 3 || timeLeft === 1) && timeLeft !== lastHaptic.current) {
+      lastHaptic.current = timeLeft;
+      vibrate(timeLeft === 1 ? 40 : 18);
+    }
+  }, [timeLeft, haptic]);
 
   return (
     <div className={cn("w-full", className)}>
@@ -44,18 +63,20 @@ export function RoundTimer({ timeLeft, total, endLabel = "時間到", className,
             className={cn(
               "font-black tabular-nums leading-none transition-colors",
               compact ? "text-2xl" : "text-4xl",
-              critical ? "text-red-400" : "text-white",
+              critical ? "text-red-400 animate-pulse" : "text-white",
             )}
           >
             {timeLeft}
           </span>
-          <span className="text-xs font-medium text-white/40">秒</span>
+          <span className="text-xs font-medium text-white/50">秒</span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div className={cn("w-full overflow-hidden rounded-full bg-white/10", compact ? "h-1.5" : "h-2")}>
           <div
             className={cn(
               "h-full rounded-full transition-[width] duration-1000 ease-linear",
-              critical ? "bg-gradient-to-r from-red-500 to-orange-400" : "[background:var(--game-accent,#a855f7)]",
+              critical
+                ? "bg-gradient-to-r from-red-500 to-orange-400 shadow-[0_0_12px_rgba(239,68,68,0.55)]"
+                : "[background:var(--game-accent,#a855f7)]",
             )}
             style={{ width: `${pct}%` }}
           />

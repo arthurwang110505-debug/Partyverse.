@@ -36,6 +36,8 @@ export interface MoveAction {
   type: "move";
   dx: number; // -1 to 1
   dy: number; // -1 to 1
+  /** Optional batch of held taps (1–4). Cuts RTDB writes under press-and-hold. */
+  steps?: number;
 }
 
 export type BattleAction = MoveAction;
@@ -108,8 +110,12 @@ export const RealBattleEngine: GameEngine<BattleGameState> = {
     const cur = state.positions[playerId];
     if (!cur) return state;
 
-    // Apply movement
-    const step = 6; // movement speed %
+    // Apply movement. Clients may batch several holds into one action via `steps`.
+    const steps =
+      typeof (act as MoveAction & { steps?: number }).steps === "number"
+        ? Math.max(1, Math.min(4, Math.floor((act as MoveAction & { steps?: number }).steps!)))
+        : 1;
+    const step = 6 * steps; // base speed % per discrete move
     const newX = Math.max(5, Math.min(95, cur.x + act.dx * step));
     const newY = Math.max(5, Math.min(95, cur.y + act.dy * step));
 

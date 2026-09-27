@@ -212,7 +212,7 @@ export default function PlayFireworkMaster() {
                   </button>
                 </div>
 
-                <RoundTimer timeLeft={state.timeLeft} total={Math.max(30, room?.settings?.timer ?? 60)} endLabel="時間到自動發射" compact />
+                <RoundTimer timeLeft={state.timeLeft} total={Math.max(30, room?.settings?.timer ?? 60)} endLabel="時間到自動發射" compact haptic />
 
                 <Button
                   variant="accent"

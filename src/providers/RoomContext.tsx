@@ -95,6 +95,8 @@ interface RoomContextValue {
   switchGame: (newGameId: string) => Promise<void>;
   updateSettings: (patch: Partial<RoomSettings>) => Promise<void>;
   submitAction: (action: unknown) => Promise<void>;
+  /** RESULTS screen: vote which game to play next (host still decides). */
+  voteNextGame: (gameId: string) => Promise<void>;
   toggleReady: () => Promise<void>;
   sendReaction: (emoji: string) => Promise<void>;
 }
@@ -792,14 +794,51 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       }),
     [mutateHostRoom],
   );
-  const rematch = useCallback(() => mutateHostRoom((current) => returnRoomToLobby(current)), [mutateHostRoom]);
+  const rematch = useCallback(
+    () =>
+      mutateHostRoom((current) => {
+        const next = returnRoomToLobby(current);
+        const { nextGameVotes: _votes, ...rest } = next as Room & { nextGameVotes?: Record<string, string> };
+        return rest;
+      }),
+    [mutateHostRoom],
+  );
   const endGame = useCallback(
     () => mutateHostRoom((current) => endRoomGame(current, Date.now() + serverOffset.current)),
     [mutateHostRoom],
   );
   const switchGame = useCallback(
-    (gameId: string) => mutateHostRoom((current) => returnRoomToLobby(current, gameId)),
+    (gameId: string) =>
+      mutateHostRoom((current) => {
+        const next = returnRoomToLobby(current, gameId);
+        const { nextGameVotes: _votes, ...rest } = next as Room & { nextGameVotes?: Record<string, string> };
+        return rest;
+      }),
     [mutateHostRoom],
+  );
+
+  const voteNextGame = useCallback(
+    async (gameId: string) => {
+      if (!room || !user) throw new Error("尚未加入房間");
+      if (room.status !== "RESULTS") throw new Error("結算畫面才能投票下一款遊戲");
+      if (!getGameEngine(gameId)) throw new Error("找不到這個遊戲");
+      const apply = (current: Room): Room => {
+        if (current.status !== "RESULTS") return current;
+        return {
+          ...current,
+          nextGameVotes: { ...(current.nextGameVotes ?? {}), [user.uid]: gameId },
+        };
+      };
+      if (db && !localModeRef.current) {
+        const result = await runTransaction(ref(db, `rooms/${room.id}`), (current) =>
+          current ? apply(current as Room) : undefined,
+        );
+        if (!result.committed) throw new Error("投票沒有送出");
+      } else if (!(await updateLocalRoom(room.id, apply))) {
+        throw new Error("找不到這個房間");
+      }
+    },
+    [room, user],
   );
   const updateSettings = useCallback(
     (patch: Partial<RoomSettings>) =>
@@ -961,6 +1000,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         switchGame,
         updateSettings,
         submitAction,
+        voteNextGame,
         toggleReady,
         sendReaction,
       }}

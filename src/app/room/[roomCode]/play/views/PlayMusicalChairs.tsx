@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRoom } from "@/providers/RoomContext";
+import { useSubmitAction } from "@/hooks/useSubmitAction";
 import { engineRoom } from "@/engine/participants";
 import type { ChairsGameState } from "@/engine/musicalChairs";
 import { SIT_SECONDS } from "@/engine/musicalChairs";
@@ -11,7 +12,8 @@ import { vibrate } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
 export default function PlayMusicalChairs() {
-  const { room, player, submitAction } = useRoom();
+  const { room, player } = useRoom();
+  const submit = useSubmitAction();
   const state = room?.gameState as ChairsGameState | undefined;
   const players = room ? engineRoom(room).players : {};
   const [pending, setPending] = useState(false);
@@ -34,14 +36,12 @@ export default function PlayMusicalChairs() {
     if (hasSitting || pending) return;
     vibrate(40);
     setPending(true);
-    try {
-      await submitAction({ type: "sit" });
-      setHasSitting(true);
-    } catch {
-      // Failed flush: let the player try again.
-    } finally {
-      setPending(false);
-    }
+    const ok = await submit(
+      { type: "sit" },
+      { failMessage: "坐下失敗，請再試一次", throttleMs: 1500 },
+    );
+    if (ok) setHasSitting(true);
+    setPending(false);
   };
 
   return (
@@ -90,7 +90,7 @@ export default function PlayMusicalChairs() {
               {hasSitting ? "✓ 已坐下" : "坐下！"}
             </button>
             <div className="mt-6">
-              <RoundTimer timeLeft={state.timeLeft} total={SIT_SECONDS} endLabel="沒有椅子！" compact />
+              <RoundTimer timeLeft={state.timeLeft} total={SIT_SECONDS} endLabel="沒有椅子！" compact haptic />
             </div>
           </>
         )}

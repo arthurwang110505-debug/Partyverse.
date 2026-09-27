@@ -49,7 +49,8 @@ export function HostShell({ children, className, wide = true }: HostShellProps) 
     if (phase === undefined) return;
     if (lastPhase.current !== undefined && phase !== lastPhase.current) {
       if (phase === "exploded") sfx.playBoom();
-      else if (["reveal", "round_reveal", "result"].includes(phase)) sfx.playSuccess();
+      else if (phase === "result") sfx.playFanfare();
+      else if (["reveal", "round_reveal", "ejected"].includes(phase)) sfx.playSuccess();
     }
     lastPhase.current = phase;
   }, [phase]);

@@ -18,8 +18,9 @@ const inter = localFont({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-const title = "PARTYVERSE — 一間房，十款遊戲，無限混亂";
-const description = "多人派對遊戲平台。用手機加入房間，電視當主畫面，和朋友即時同樂。Bomb Countdown 現已開放。";
+const title = "PARTYVERSE — 一間房，16 款遊戲，無限混亂";
+const description =
+  "多人派對遊戲平台。用手機加入房間，電視當主畫面，和朋友即時同樂。16 款派對遊戲全部可玩，掃 QR 立刻開局。";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
   },
   description,
   applicationName: "PARTYVERSE",
-  keywords: ["派對遊戲", "多人遊戲", "party game", "multiplayer", "bomb countdown", "破冰遊戲"],
+  keywords: ["派對遊戲", "多人遊戲", "party game", "multiplayer", "bomb countdown", "破冰遊戲", "Among Us", "你畫我猜"],
   openGraph: {
     type: "website",
     url: siteUrl,

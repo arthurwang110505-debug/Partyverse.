@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRoom } from "@/providers/RoomContext";
 import { useToast } from "@/providers/ToastProvider";
+import { useGameViewState } from "@/hooks/useGameViewState";
 import { maskCode, MAX_HINTS, type MysteryGameState } from "@/engine/mysteryRoom";
 import { Button } from "@/components/ui/Button";
 import { PlayShell } from "@/components/game/PlayShell";
@@ -10,9 +11,9 @@ import { vibrate, sfx } from "@/lib/sound";
 import { Delete, KeyRound, Lightbulb } from "lucide-react";
 
 export default function PlayMysteryRoom() {
-  const { room, player, submitAction } = useRoom();
+  const { player, submitAction } = useRoom();
   const { toast } = useToast();
-  const state = room?.gameState as MysteryGameState | undefined;
+  const state = useGameViewState<MysteryGameState & { myClue?: MysteryGameState["playerClues"][string] }>();
   const [code, setCode] = useState("");
   const [pending, setPending] = useState(false);
   const [hintPending, setHintPending] = useState(false);
@@ -35,9 +36,13 @@ export default function PlayMysteryRoom() {
 
   if (!state || !player) return null;
 
-  const myClue = state.playerClues?.[player.id];
+  const myClue = state.myClue ?? state.playerClues?.[player.id];
   const hintsLeft = MAX_HINTS - (state.hintsUsed ?? 0);
-  const revealed = maskCode(state.correctCode, state.hintRevealed ?? 0);
+  const revealed =
+    (state as { displayCode?: string }).displayCode ??
+    (typeof state.correctCode === "string"
+      ? maskCode(state.correctCode, state.hintRevealed ?? 0)
+      : "••••");
 
   const handleDigit = (digit: string) => {
     if (code.length >= 4) return;

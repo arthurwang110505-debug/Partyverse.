@@ -5,35 +5,61 @@ export const UNDERCOVER_GAME_ID = "whoisundercoveragent";
 export interface WordPair {
   civilianWord: string;
   undercoverWord: string;
+  /** easy = obvious cousins; hard = near-synonyms that need careful talk. */
+  difficulty?: "easy" | "medium" | "hard";
 }
 
 export const WORD_PAIRS: WordPair[] = [
-  { civilianWord: "珍珠奶茶", undercoverWord: "水果茶" },
-  { civilianWord: "牛肉麵", undercoverWord: "羊肉爐" },
-  { civilianWord: "捷運", undercoverWord: "高鐵" },
-  { civilianWord: "企鵝", undercoverWord: "北極熊" },
-  { civilianWord: "鹽酥雞", undercoverWord: "炸雞排" },
-  { civilianWord: "麥當勞", undercoverWord: "肯德基" },
+  { civilianWord: "珍珠奶茶", undercoverWord: "水果茶", difficulty: "easy" },
+  { civilianWord: "牛肉麵", undercoverWord: "羊肉爐", difficulty: "easy" },
+  { civilianWord: "捷運", undercoverWord: "高鐵", difficulty: "easy" },
+  { civilianWord: "企鵝", undercoverWord: "北極熊", difficulty: "easy" },
+  { civilianWord: "鹽酥雞", undercoverWord: "炸雞排", difficulty: "easy" },
+  { civilianWord: "麥當勞", undercoverWord: "肯德基", difficulty: "easy" },
   { civilianWord: "自行車", undercoverWord: "滑板車" },
-  { civilianWord: "太陽眼鏡", undercoverWord: "護目鏡" },
+  { civilianWord: "太陽眼鏡", undercoverWord: "護目鏡", difficulty: "medium" },
   { civilianWord: "吉他", undercoverWord: "烏克麗麗" },
   { civilianWord: "雨傘", undercoverWord: "雨衣" },
-  { civilianWord: "小籠包", undercoverWord: "水煎包" },
-  { civilianWord: "麻辣鍋", undercoverWord: "壽喜燒" },
+  { civilianWord: "小籠包", undercoverWord: "水煎包", difficulty: "medium" },
+  { civilianWord: "麻辣鍋", undercoverWord: "壽喜燒", difficulty: "medium" },
   { civilianWord: "西瓜", undercoverWord: "哈密瓜" },
   { civilianWord: "貓咪", undercoverWord: "狐狸" },
   { civilianWord: "咖啡", undercoverWord: "奶茶" },
-  { civilianWord: "電影院", undercoverWord: "歌劇院" },
+  { civilianWord: "電影院", undercoverWord: "歌劇院", difficulty: "hard" },
   { civilianWord: "跑步機", undercoverWord: "腳踏車" },
   { civilianWord: "手機", undercoverWord: "平板電腦" },
-  { civilianWord: "泡麵", undercoverWord: "乾拌麵" },
+  { civilianWord: "泡麵", undercoverWord: "乾拌麵", difficulty: "hard" },
   { civilianWord: "拖鞋", undercoverWord: "涼鞋" },
   { civilianWord: "口紅", undercoverWord: "護唇膏" },
   { civilianWord: "圍巾", undercoverWord: "毛毯" },
   { civilianWord: "羽球", undercoverWord: "網球" },
   { civilianWord: "可樂", undercoverWord: "雪碧" },
-  { civilianWord: "護照", undercoverWord: "身分證" },
+  { civilianWord: "護照", undercoverWord: "身分證", difficulty: "medium" },
+  { civilianWord: "夜市", undercoverWord: "市集", difficulty: "easy" },
+  { civilianWord: "捷運卡", undercoverWord: "悠遊卡", difficulty: "easy" },
+  { civilianWord: "鳳梨酥", undercoverWord: "太陽餅", difficulty: "easy" },
+  { civilianWord: "芒果冰", undercoverWord: "草莓冰", difficulty: "easy" },
+  { civilianWord: "海灘", undercoverWord: "游泳池", difficulty: "easy" },
+  { civilianWord: "便利商店", undercoverWord: "超市", difficulty: "medium" },
+  { civilianWord: "滷肉飯", undercoverWord: "雞肉飯", difficulty: "medium" },
+  { civilianWord: "台北101", undercoverWord: "東京晴空塔", difficulty: "medium" },
+  { civilianWord: "撲克牌", undercoverWord: "UNO", difficulty: "medium" },
+  { civilianWord: "藍牙耳機", undercoverWord: "有線耳機", difficulty: "medium" },
+  { civilianWord: "期末考", undercoverWord: "期中考", difficulty: "hard" },
+  { civilianWord: "社群軟體", undercoverWord: "通訊軟體", difficulty: "hard" },
+  { civilianWord: "空氣清淨機", undercoverWord: "除濕機", difficulty: "hard" },
+  { civilianWord: "行動電源", undercoverWord: "充電器", difficulty: "hard" },
+  { civilianWord: "共享單車", undercoverWord: "共享機車", difficulty: "hard" },
 ];
+
+
+/** Prefer pairs matching the room difficulty; fall back to the full bank. */
+export function pickWordPair(difficulty: string = "easy", rand: () => number = Math.random): WordPair {
+  const want = difficulty === "hard" ? "hard" : difficulty === "medium" ? "medium" : "easy";
+  const tiered = WORD_PAIRS.filter((p) => (p.difficulty ?? "easy") === want);
+  const pool = tiered.length >= 3 ? tiered : WORD_PAIRS;
+  return pool[Math.floor(rand() * pool.length)] ?? WORD_PAIRS[0];
+}
 
 export type UndercoverPhase = "viewing_words" | "discussion" | "voting" | "eliminated" | "result";
 
@@ -91,7 +117,7 @@ function assignWords(
 
 export const WhoIsUndercoverEngine: GameEngine<UndercoverGameState> = {
   createGame(room) {
-    const pair = WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)];
+    const pair = pickWordPair(room.settings?.difficulty ?? "easy");
     const { words, undercoverId } = assignWords(room.players, pair);
 
     return {

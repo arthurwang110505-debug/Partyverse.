@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRoom } from "@/providers/RoomContext";
-import { useToast } from "@/providers/ToastProvider";
+import { useSubmitAction } from "@/hooks/useSubmitAction";
 import type { KingGameState } from "@/engine/kingTonight";
 import { Button } from "@/components/ui/Button";
 import { PlayShell } from "@/components/game/PlayShell";
@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
 const TAP_FLUSH_MS = 400;
 
 export default function PlayKingTonight() {
-  const { room, player, submitAction } = useRoom();
-  const { toast } = useToast();
+  const { room, player } = useRoom();
+  const submit = useSubmitAction();
   const state = room?.gameState as KingGameState | undefined;
   const [taps, setTaps] = useState(0);
   const pendingTapsRef = useRef(0);
@@ -55,16 +55,18 @@ export default function PlayKingTonight() {
       const count = pendingTapsRef.current;
       if (count <= 0) return;
       pendingTapsRef.current = 0;
-      submitAction({ type: "taps", count }).catch(() => {
-        // Failed flushes go back into the queue for the next interval.
-        pendingTapsRef.current += count;
+      void submit(
+        { type: "taps", count },
+        { failMessage: "連點沒送出，檢查連線", throttleMs: 4000 },
+      ).then((ok) => {
+        if (!ok) pendingTapsRef.current += count;
       });
     }, TAP_FLUSH_MS);
     const flushOnExit = () => {
       const count = pendingTapsRef.current;
       if (count <= 0) return;
       pendingTapsRef.current = 0;
-      void submitAction({ type: "taps", count }).catch(() => undefined);
+      void submit({ type: "taps", count }, { silent: true });
     };
     window.addEventListener("pagehide", flushOnExit);
     return () => {
@@ -72,7 +74,7 @@ export default function PlayKingTonight() {
       window.removeEventListener("pagehide", flushOnExit);
       flushOnExit();
     };
-  }, [state?.phase, state?.currentRound, challenge?.type, submitAction]);
+  }, [state?.phase, state?.currentRound, challenge?.type, submit]);
 
   if (!state || !player) return null;
 
@@ -97,20 +99,15 @@ export default function PlayKingTonight() {
     const reactionTime = slashStartTimeRef.current ? Math.round(performance.now() - slashStartTimeRef.current) : 300;
     vibrate(40);
     sfx.playSuccess();
-    try {
-      await submitAction({ type: "react", reactionTimeMs: reactionTime });
-    } catch {
-      toast("拔刀失敗，請再試一次");
-    }
+    await submit(
+      { type: "react", reactionTimeMs: reactionTime },
+      { failMessage: "拔刀失敗，請再試一次" },
+    );
   };
 
   const handleMath = async (ans: string) => {
     vibrate(15);
-    try {
-      await submitAction({ type: "choice", answer: ans });
-    } catch {
-      toast("作答失敗，請再試一次");
-    }
+    await submit({ type: "choice", answer: ans }, { failMessage: "作答失敗，請再試一次" });
   };
 
   return (

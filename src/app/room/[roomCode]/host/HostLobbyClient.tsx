@@ -134,15 +134,17 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
 
           {joinUrl && (
             <>
-              <div className="mb-4 inline-block rounded-2xl bg-white p-4 shadow-xl">
-                <QRCodeSVG value={joinUrl} size={240} level="H" aria-label={`加入房間 ${roomCode} 的 QR code`} />
+              <div className="mb-4 inline-block rounded-2xl bg-white p-5 shadow-xl ring-4 ring-white/10">
+                <QRCodeSVG
+                  value={joinUrl}
+                  size={280}
+                  level="H"
+                  aria-label={`加入房間 ${roomCode} 的 QR code`}
+                  className="h-auto w-[min(70vw,280px)]"
+                />
               </div>
-              <p className="mb-4 break-all font-mono text-sm text-white/60">
-                <span className="mb-1 block text-xs uppercase tracking-wider text-white/30">
-                  手機瀏覽器直接輸入網址
-                </span>
-                {joinUrl}
-              </p>
+              <p className="mb-1 text-xs uppercase tracking-wider text-white/50">手機瀏覽器直接輸入網址</p>
+              <p className="mb-4 break-all font-mono text-base font-semibold text-cyan-200/90 md:text-lg">{joinUrl}</p>
             </>
           )}
 
@@ -289,8 +291,13 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
             </AnimatePresence>
             {playerList.length === 0 && (
               <li className="py-8 text-center">
-                <p className="text-sm text-white/50">還沒有玩家，快分享代碼或掃描 QR code！</p>
-                <p className="mt-1 text-xs text-white/40">湊齊 {minPlayers} 人即可開始遊戲同樂。</p>
+                <p className="text-sm text-white/60">還沒有玩家，快分享代碼或掃描 QR code！</p>
+                <p className="mt-1 text-xs text-white/50">湊齊 {minPlayers} 人即可開始遊戲同樂。</p>
+                <ol className="mx-auto mt-4 flex max-w-sm flex-col gap-1.5 text-left text-xs text-white/55">
+                  <li>① 朋友掃上方 QR 或輸入代碼</li>
+                  <li>② 手機填暱稱，點「就緒」</li>
+                  <li>③ 人數達標後，房主按開始</li>
+                </ol>
               </li>
             )}
           </ul>
@@ -309,7 +316,7 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
                 "col-span-2 md:col-span-1 font-bold transition-all shadow-lg",
                 allReady && "ring-2 ring-emerald-400 ring-offset-2 ring-offset-ink scale-105",
               )}
-              aria-describedby={canStart ? undefined : "start-hint"}
+              aria-describedby="start-hint"
               onClick={() => (allReady ? void handleStart() : setConfirmStart(true))}
             >
               <Crown className="h-4 w-4" aria-hidden="true" />
@@ -324,21 +331,35 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
           </div>
         )}
 
-        <p id="start-hint" className="mt-4 text-center text-sm text-white/40" role="status">
-          {canStart ? (
-            <span className="text-emerald-400 font-medium">
-              ✨ {onlineCount} 人在線（{readyCount} 人已就緒），隨時可以啟動遊戲！
+        <div id="start-hint" className="mt-4 space-y-2 text-center text-sm text-white/50" role="status">
+          <p className="flex flex-wrap items-center justify-center gap-2">
+            <span className="text-xs uppercase tracking-wider text-white/40">人數</span>
+            <span aria-hidden="true" className="tracking-[0.35em] text-lg text-violet-300">
+              {Array.from({ length: Math.max(0, minPlayers) }, (_, i) => (i < onlineCount ? "●" : "○")).join("")}
             </span>
-          ) : (
-            <>
-              <span aria-hidden="true" className="mr-1 tracking-widest text-violet-400">
-                {Array.from({ length: Math.max(0, minPlayers) }, (_, i) => (i < onlineCount ? "●" : "○")).join("")}
+            <span className="tabular-nums">
+              {onlineCount} / {minPlayers}
+            </span>
+          </p>
+          {canStart && onlineCount > 0 && (
+            <p className="flex flex-wrap items-center justify-center gap-2">
+              <span className="text-xs uppercase tracking-wider text-white/40">就緒</span>
+              <span aria-hidden="true" className="tracking-[0.35em] text-lg text-emerald-300">
+                {Array.from({ length: onlineCount }, (_, i) => (i < readyCount ? "●" : "○")).join("")}
               </span>
-              {onlineCount} / {minPlayers} 位玩家 — 本遊戲至少需要 {minPlayers} 人
-              <span className="sr-only">還差 {Math.max(0, minPlayers - onlineCount)} 人</span>
-            </>
+              <span className="tabular-nums">
+                {readyCount} / {onlineCount}
+              </span>
+            </p>
           )}
-        </p>
+          <p className={cn("font-medium", canStart ? "text-emerald-300" : "text-white/55")}>
+            {canStart
+              ? allReady
+                ? "✨ 全員就緒，可以立刻開玩！"
+                : `✨ 人數達標（${readyCount} 人已就緒），可開始或再等一下`
+              : `還差 ${Math.max(0, minPlayers - onlineCount)} 人才能開始 · 本遊戲至少 ${minPlayers} 人`}
+          </p>
+        </div>
       </div>
 
       {/* Fullscreen QR */}

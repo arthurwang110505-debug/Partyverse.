@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRoom } from "@/providers/RoomContext";
+import { useSubmitAction } from "@/hooks/useSubmitAction";
 import { SIMON_QUADRANTS, repeatSeconds, simonSequence } from "@/engine/simonSays";
 import type { SimonGameState } from "@/engine/simonSays";
 import { PlayShell } from "@/components/game/PlayShell";
@@ -17,7 +18,8 @@ const BUTTON_STYLES = [
 ];
 
 export default function PlaySimonSays() {
-  const { room, player, submitAction } = useRoom();
+  const { room, player } = useRoom();
+  const submit = useSubmitAction();
   const state = room?.gameState as SimonGameState | undefined;
   const [taps, setTaps] = useState<number[]>([]);
   const [sending, setSending] = useState(false);
@@ -40,10 +42,13 @@ export default function PlaySimonSays() {
 
   const send = async (answer: number[]) => {
     setSending(true);
-    try {
-      await submitAction({ type: "submitSequence", taps: answer });
-    } catch {
+    const ok = await submit(
+      { type: "submitSequence", taps: answer },
+      { failMessage: "順序送出失敗，請再試一次" },
+    );
+    if (!ok) {
       setSending(false);
+      setTaps([]);
     }
   };
 
@@ -136,7 +141,7 @@ export default function PlaySimonSays() {
             )}
             {!iAmMaxed && !finished && (
               <div className="mt-5">
-                <RoundTimer timeLeft={state.timeLeft} total={repeatSeconds(state.level)} endLabel="淘汰" compact />
+                <RoundTimer timeLeft={state.timeLeft} total={repeatSeconds(state.level)} endLabel="淘汰" compact haptic />
               </div>
             )}
           </>
