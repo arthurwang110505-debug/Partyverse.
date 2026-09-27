@@ -94,3 +94,14 @@ describe("utils", () => {
     });
   });
 });
+
+import { stripUndefined } from "./utils";
+
+describe("stripUndefined", () => {
+  it("drops undefined keys recursively so Firebase transactions accept the payload", () => {
+    expect(stripUndefined({ a: 1, privateHost: undefined, nested: { b: undefined, c: [1, undefined, { d: undefined }] } })).toEqual({
+      a: 1,
+      nested: { c: [1, null, {}] },
+    });
+  });
+});
