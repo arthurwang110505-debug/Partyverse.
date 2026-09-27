@@ -68,6 +68,18 @@ export interface Room<S = Record<string, unknown>> {
   participantIds?: string[];
   /** Small content history retained across rematches; never stores drawings. */
   contentHistory?: Record<string, string[]>;
+  /**
+   * RESULTS-screen poll: playerId → gameId they want next.
+   * Cleared when the host starts a rematch or switches games.
+   */
+  nextGameVotes?: Record<string, string>;
+  /**
+   * Host-only secret mirror of gameState fields (roles, words, passcodes).
+   * Engines hydrate from this; phones never receive it unless they are host.
+   */
+  privateHost?: Record<string, unknown>;
+  /** Per-player secrets. Rules should allow each uid to read only private/{uid}. */
+  private?: Record<string, Record<string, unknown>>;
 }
 
 export interface GameDefinition {

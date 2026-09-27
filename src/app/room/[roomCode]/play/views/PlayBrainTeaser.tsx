@@ -66,7 +66,7 @@ export default function PlayBrainTeaser() {
               ))}
             </div>
             <div className="mt-4">
-              <RoundTimer timeLeft={state.timeLeft} total={Math.max(10, room?.settings?.timer ?? 20)} endLabel="揭曉" compact />
+              <RoundTimer timeLeft={state.timeLeft} total={Math.max(10, room?.settings?.timer ?? 20)} endLabel="揭曉" compact haptic />
             </div>
             {mine !== undefined && <p className="mt-3 text-sm text-white/70">已送出！看大螢幕等揭曉 👀</p>}
           </>

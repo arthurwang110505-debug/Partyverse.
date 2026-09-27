@@ -3,6 +3,7 @@ import type { Room, RoomSettings } from "@/types";
 import { advanceRoomGame, applyRoomAction, startRoomGame } from "@/lib/gameSession";
 import { testRoom } from "@/test/fixtures";
 import { playableGameIds } from "./index";
+import { hydrateGameState } from "@/lib/privateState";
 import { simonSequence } from "./simonSays";
 
 /**
@@ -63,6 +64,13 @@ function playerIds(room: Room): string[] {
   return Object.keys(room.players).filter((id) => room.players[id].role !== "display");
 }
 
+/** Engines publish secrets on privateHost; tests drive with the full hydrated state. */
+function fullState<T = Record<string, unknown>>(room: Room): T {
+  return hydrateGameState(room.gameState as Record<string, unknown>, room.privateHost ?? null) as T;
+}
+
+
+
 describe("full match playthroughs (all games reach results)", () => {
   it("everybodyknows: everyone votes each round until the final reveal", () => {
     const room = playMatch(
@@ -110,7 +118,7 @@ describe("full match playthroughs (all games reach results)", () => {
     const room = playMatch(
       "whoisundercoveragent",
       (r, runner) => {
-        const s = r.gameState as { phase: string; votes: Record<string, string>; undercoverPlayerId: string };
+        const s = fullState<{ phase: string; votes: Record<string, string>; undercoverPlayerId: string }>(r);
         if (s.phase !== "voting") return;
         for (const id of playerIds(r)) {
           if (!s.votes[id]) runner.submit(id, { type: "vote", targetPlayerId: s.undercoverPlayerId });
@@ -230,7 +238,7 @@ describe("full match playthroughs (all games reach results)", () => {
     const room = playMatch(
       "drawandguess",
       (r, runner) => {
-        const s = r.gameState as {
+        const s = fullState<{
           phase: string;
           currentRound: number;
           drawerPlayerId: string;
@@ -238,7 +246,7 @@ describe("full match playthroughs (all games reach results)", () => {
           guesses: Record<string, string>;
           strokes: unknown[];
           canvasVersion: number;
-        };
+        }>(r);
         if (s.phase !== "drawing") return;
         turnsSeen = Math.max(turnsSeen, s.currentRound);
         const drawer = s.drawerPlayerId;
@@ -307,7 +315,7 @@ describe("full match playthroughs (all games reach results)", () => {
     const room = playMatch(
       "mysteryroom",
       (r, runner) => {
-        const s = r.gameState as { phase: string; correctCode: string; submittedCode: string };
+        const s = fullState<{ phase: string; correctCode: string; submittedCode: string }>(r);
         if (s.phase !== "investigation") return;
         // "Discuss" for a few seconds, then the sharpest player types it in.
         if (runner.ticks > 5 && !s.submittedCode) {
@@ -460,7 +468,7 @@ describe("full match playthroughs (all games reach results)", () => {
 
   it("amongus: crew finish every task and win", () => {
     const room = playMatch("amongus", (r, runner) => {
-      const s = r.gameState as { phase: string; impostorIds: string[]; tasks: Record<string, number[]>; taskMask: Record<string, number> };
+      const s = fullState<{ phase: string; impostorIds: string[]; tasks: Record<string, number[]>; taskMask: Record<string, number> }>(r);
       if (s.phase !== "tasks") return;
       for (const id of playerIds(r)) {
         if (s.impostorIds.includes(id)) continue;
@@ -468,7 +476,7 @@ describe("full match playthroughs (all games reach results)", () => {
         if (slot >= 0) runner.submit(id, { type: "completeTask", slot });
       }
     });
-    const s = room.gameState as { winnerTeam: string; impostorIds: string[]; winnerIds: string[] };
+    const s = fullState<{ winnerTeam: string; impostorIds: string[]; winnerIds: string[] }>(room);
     expect(s.winnerTeam).toBe("crew");
     expect(s.winnerIds).not.toContain(s.impostorIds[0]);
     expect(room.gameState.winnerIds).toEqual(s.winnerIds);
@@ -476,7 +484,7 @@ describe("full match playthroughs (all games reach results)", () => {
 
   it("amongus: the impostor picks off crew until they win", () => {
     const room = playMatch("amongus", (r, runner) => {
-      const s = r.gameState as { phase: string; impostorIds: string[]; deadIds: string[]; killCooldowns: Record<string, number> };
+      const s = fullState<{ phase: string; impostorIds: string[]; deadIds: string[]; killCooldowns: Record<string, number> }>(r);
       if (s.phase !== "tasks") return;
       const imp = s.impostorIds[0];
       const target = playerIds(r).find((id) => id !== imp && !s.deadIds.includes(id));
@@ -487,7 +495,7 @@ describe("full match playthroughs (all games reach results)", () => {
 
   it("amongus: a meeting votes the impostor out", () => {
     const room = playMatch("amongus", (r, runner) => {
-      const s = r.gameState as { phase: string; impostorIds: string[]; votes: Record<string, string>; deadIds: string[] };
+      const s = fullState<{ phase: string; impostorIds: string[]; votes: Record<string, string>; deadIds: string[] }>(r);
       if (s.phase === "tasks") runner.submit(playerIds(r).find((id) => !s.impostorIds.includes(id))!, { type: "emergency" });
       if (s.phase === "discussion" || s.phase === "voting") {
         for (const id of playerIds(r)) if (!s.votes[id]) runner.submit(id, { type: "vote", targetId: s.impostorIds[0] });

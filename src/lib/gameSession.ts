@@ -6,6 +6,7 @@ import { getGameEngine } from "@/engine";
 import { connectedParticipantIds, isParticipant, participantIds } from "@/engine/participants";
 import { topScorers } from "@/engine/scoring";
 import { normalizeGameState } from "@/engine/state";
+import { hydrateGameState, splitSecrets } from "@/lib/privateState";
 
 type State = Record<string, unknown>;
 export interface ActionPhase {
@@ -44,29 +45,57 @@ function stamp(previous: State | null, next: State, now: number, action = false)
   return { ...next, phaseEndsAt: deadline };
 }
 
+/** Engines always see public ⊔ host secrets. */
+function forEngine(room: Room): Room {
+  const publicState = normalizeGameState(room.gameId, room.gameState);
+  return {
+    ...room,
+    gameState: hydrateGameState(publicState, room.privateHost ?? null),
+  };
+}
+
+/** Strip secrets before the room blob is stored / broadcast. */
+function publish(room: Room): Room {
+  const full = room.gameState as Record<string, unknown>;
+  const { publicState, hostSecrets, playerSecrets } = splitSecrets(room.gameId, full);
+  const hasSecrets = Object.keys(hostSecrets).length > 0 || Object.keys(playerSecrets).length > 0;
+  return {
+    ...room,
+    gameState: publicState,
+    privateHost: hasSecrets ? hostSecrets : room.privateHost,
+    private: hasSecrets ? playerSecrets : room.private,
+  };
+}
+
 function finish(room: Room, now: number): Room {
-  if (room.gameState.phase !== "result") return room;
-  const engine = getGameEngine(room.gameId);
+  const live = forEngine(room);
+  if (live.gameState.phase !== "result") return room;
+  const engine = getGameEngine(live.gameId);
   if (!engine) return room;
-  const summary = engine.endGame(room);
-  const ids = participantIds(room);
+  const summary = engine.endGame(live);
+  const ids = participantIds(live);
   let winnerIds = summary.winnerIds ?? topScorers(summary.scores, ids);
-  if (room.gameId === "mysteryroom") winnerIds = room.gameState.isUnlocked ? ids : [];
-  if (room.gameState.winnerTeam === "civilians")
-    winnerIds = ids.filter((id) => id !== room.gameState.undercoverPlayerId);
-  if (room.gameState.winnerTeam === "undercover")
-    winnerIds = ids.filter((id) => id === room.gameState.undercoverPlayerId);
+  if (live.gameId === "mysteryroom") winnerIds = live.gameState.isUnlocked ? ids : [];
+  if (live.gameState.winnerTeam === "civilians")
+    winnerIds = ids.filter((id) => id !== live.gameState.undercoverPlayerId);
+  if (live.gameState.winnerTeam === "undercover")
+    winnerIds = ids.filter((id) => id === live.gameState.undercoverPlayerId);
+  // On RESULTS, reveal host secrets publicly so the podium can name the spy / words.
+  const revealed = {
+    ...live.gameState,
+    currentScores: summary.scores,
+    achievements: summary.achievements,
+    winnerId: winnerIds[0] ?? "",
+    winnerIds,
+  };
   return {
     ...room,
     status: "RESULTS",
     finishedAt: now,
-    gameState: {
-      ...room.gameState,
-      currentScores: summary.scores,
-      achievements: summary.achievements,
-      winnerId: winnerIds[0] ?? "",
-      winnerIds,
-    },
+    gameState: revealed,
+    // Keep private mirrors so a rematch path can clear them cleanly.
+    privateHost: room.privateHost,
+    private: room.private,
   };
 }
 
@@ -83,14 +112,15 @@ export function startRoomGame(room: Room, now = Date.now()): Room {
     throw new Error(`至少需要 ${game?.minPlayers ?? 2} 位手機玩家才能開始（電視不計入）`);
   if (ids.length > (game?.maxPlayers ?? 20)) throw new Error(`這款遊戲最多支援 ${game?.maxPlayers ?? 20} 位玩家`);
   const current: Room = { ...room, settings: normalizeSettings(room.gameId, room.settings), participantIds: ids };
-  const { finishedAt: _finished, ...base } = current;
-  return {
+  const { finishedAt: _finished, privateHost: _ph, private: _pv, ...base } = current;
+  const fullState = stamp(null, engine.createGame(current), now);
+  return publish({
     ...base,
     status: "PLAYING",
     startedAt: now,
     lastTickAt: now,
-    gameState: stamp(null, engine.createGame(current), now),
-  };
+    gameState: fullState,
+  });
 }
 
 /**
@@ -101,18 +131,19 @@ export function advanceRoomGame(room: Room, now = Date.now(), heartbeat = false)
   if (room.status !== "PLAYING") return room;
   const engine = getGameEngine(room.gameId);
   if (!engine) return room;
-  const state = normalizeGameState(room.gameId, room.gameState);
-  if (state.phase === "result") return finish({ ...room, gameState: state }, now);
+  const live = forEngine(room);
+  const state = live.gameState as State;
+  if (state.phase === "result") return finish(live, now);
   const key = timerKey(state);
   const deadline = typeof state.phaseEndsAt === "number" ? state.phaseEndsAt : now + seconds(state) * 1000;
   const remaining = Math.max(0, Math.ceil((deadline - now) / 1000));
-  const next = engine.updateGameState({ ...room, gameState: { ...state, [key]: remaining + 1 } });
-  const updated = {
+  const next = engine.updateGameState({ ...live, gameState: { ...state, [key]: remaining + 1 } });
+  const updated = publish({
     ...room,
     ...(heartbeat ? { lastTickAt: now } : {}),
     gameState: stamp({ ...state, phaseEndsAt: deadline }, next, now),
-  };
-  return finish(updated, now);
+  });
+  return finish(forEngine(updated), now);
 }
 
 export function applyRoomAction(
@@ -122,13 +153,14 @@ export function applyRoomAction(
   expected: ActionPhase,
   now = Date.now(),
 ): Room {
+  const livePhase = forEngine(room).gameState.phase;
   if (
     room.status !== "PLAYING" ||
     room.gameId !== expected.gameId ||
     room.startedAt !== expected.startedAt ||
     (!connectedParticipantIds(room).includes(playerId) &&
       !(
-        room.gameState.phase === "rules" &&
+        livePhase === "rules" &&
         room.hostPlayerId === playerId &&
         room.players[playerId]?.isConnected !== false &&
         room.players[playerId] &&
@@ -137,22 +169,33 @@ export function applyRoomAction(
   )
     return room;
   const current = advanceRoomGame(room, now);
+  const live = forEngine(current);
   if (
     current.status !== "PLAYING" ||
-    current.gameState.phase !== expected.phase ||
-    current.gameState.currentRound !== expected.round ||
-    (expected.contextKey !== undefined && actionContextKey(current.gameState) !== expected.contextKey)
+    live.gameState.phase !== expected.phase ||
+    live.gameState.currentRound !== expected.round ||
+    (expected.contextKey !== undefined && actionContextKey(live.gameState as State) !== expected.contextKey)
   )
     return current;
   const engine = getGameEngine(current.gameId)!;
-  const next = engine.handlePlayerAction(current, playerId, action);
-  return finish({ ...current, gameState: stamp(current.gameState, next, now, true) }, now);
+  const next = engine.handlePlayerAction(live, playerId, action);
+  const stamped = stamp(live.gameState as State, next as State, now, true);
+  return finish(forEngine(publish({ ...current, gameState: stamped })), now);
 }
 
 /** Rematch and switching games are lobby transitions, not an in-game endRound. */
 export function returnRoomToLobby(room: Room, gameId = room.gameId): Room {
   if (!getGameEngine(gameId)) throw new Error("找不到這個遊戲");
-  const { startedAt: _started, finishedAt: _finished, lastTickAt: _tick, participantIds: _ids, ...base } = room;
+  const {
+    startedAt: _started,
+    finishedAt: _finished,
+    lastTickAt: _tick,
+    participantIds: _ids,
+    nextGameVotes: _votes,
+    privateHost: _ph,
+    private: _pv,
+    ...base
+  } = room;
   const history = Array.isArray(room.gameState.usedPromptIds) ? (room.gameState.usedPromptIds as string[]) : [];
   return {
     ...base,
@@ -173,7 +216,11 @@ export function restartRoomGame(room: Room, now = Date.now()): Room {
 
 export function endRoomGame(room: Room, now = Date.now()): Room {
   if (room.status !== "PLAYING") return room;
-  return finish({ ...room, gameState: { ...normalizeGameState(room.gameId, room.gameState), phase: "result" } }, now);
+  const live = forEngine(room);
+  return finish(
+    { ...live, gameState: { ...live.gameState, phase: "result" } },
+    now,
+  );
 }
 
 /** Compare-and-swap ownership; leave the current phase deadline untouched. */

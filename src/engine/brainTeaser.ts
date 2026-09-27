@@ -45,6 +45,19 @@ export const RIDDLES: Riddle[] = [
   { id: "r30", question: "什麼桶不能裝水？", answer: "飯桶", wrong: ["水桶", "油桶", "木桶"], explain: "飯桶是罵人很會吃。" },
   { id: "r31", question: "什麼東西天氣越熱，越愛跑出來？", answer: "汗", wrong: ["太陽", "蚊子", "冰淇淋"], explain: "一熱就流汗。" },
   { id: "r32", question: "什麼東西比天還高？", answer: "心", wrong: ["山", "飛機", "月亮"], explain: "心比天高！" },
+  { id: "r33", question: "什麼東西有頭無腳？", answer: "針", wrong: ["蛇", "魚", "頭髮"], explain: "針有針頭，沒有腳。" },
+  { id: "r34", question: "什麼東西越冷越愛出來？", answer: "鼻涕", wrong: ["雪人", "冰棒", "企鵝"], explain: "一冷就流鼻涕。" },
+  { id: "r35", question: "什麼角只能看不能碰？", answer: "牆角", wrong: ["牛角", "直角", "海角"], explain: "牆角在那裡，不能搬回家。" },
+  { id: "r36", question: "什麼東西越擦越髒？", answer: "黑板", wrong: ["玻璃", "鏡子", "桌子"], explain: "粉筆字越擦，粉塵越多。" },
+  { id: "r37", question: "什麼杯不能裝水？", answer: "世界盃", wrong: ["紙杯", "玻璃杯", "獎盃"], explain: "世界盃是球賽名稱。" },
+  { id: "r38", question: "什麼蛋打不破？", answer: "臉皮", wrong: ["鴕鳥蛋", "恐龍蛋", "金蛋"], explain: "玩笑話：臉皮很厚。" },
+  { id: "r39", question: "什麼東西天天吃卻吃不完？", answer: "虧", wrong: ["空氣", "飯", "水果"], explain: "「吃虧」啊！" },
+  { id: "r40", question: "什麼輪子不會轉？", answer: "年輪", wrong: ["車輪", "齒輪", "輪盤"], explain: "樹的年輪不會轉。" },
+  { id: "r41", question: "什麼東西不能吃，卻天天聽人說要吃？", answer: "吃醋", wrong: ["吃藥", "吃土", "吃香"], explain: "吃醋是嫉妒，不是真的醋。" },
+  { id: "r42", question: "什麼「頭」永遠不會痛？", answer: "木頭", wrong: ["石頭", "牆頭", "枕頭"], explain: "木頭沒有神經，不會痛。" },
+  { id: "r43", question: "什麼「子」比兒子還親？", answer: "鞋子", wrong: ["孫子", "侄子", "票子"], explain: "鞋子整天貼著你。" },
+  { id: "r44", question: "什麼「點」最可怕？", answer: "缺點", wrong: ["點心", "點火", "點名"], explain: "每個人都怕自己的缺點被看到。" },
+  { id: "r45", question: "什麼「包」永遠裝不滿？", answer: "書包", wrong: ["背包", "麵包", "紅包"], explain: "學生的書包永遠還有作業。" },
 ];
 
 export type BrainPhase = "question" | "reveal" | "result";

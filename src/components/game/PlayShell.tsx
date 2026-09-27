@@ -5,7 +5,10 @@ import { Crown } from "lucide-react";
 import { useRoom } from "@/providers/RoomContext";
 import { GAMES } from "@/constants/games";
 import { MuteToggle } from "@/components/game/MuteToggle";
+import { ConnectionBadge } from "@/components/game/ConnectionBadge";
 import { FloatingReactions } from "@/components/game/FloatingReactions";
+import { LeaveGuard } from "@/components/game/LeaveGuard";
+import { ScoreDelta } from "@/components/game/ScoreDelta";
 import { HostGameControls } from "./HostGameControls";
 import { HostRecoveryNotice } from "./HostRecoveryNotice";
 import { GameplayFeedback } from "./GameplayFeedback";
@@ -39,10 +42,11 @@ export function PlayShell({ children, className, round }: PlayShellProps) {
 
   return (
     <main
-      className="flex min-h-[100dvh] flex-col bg-[#0b0c14] text-white relative overflow-hidden before:pointer-events-none before:fixed before:inset-y-0 before:left-0 before:w-2 before:bg-gradient-to-r before:from-cyan-500/30 before:to-transparent before:z-50 after:pointer-events-none after:fixed after:inset-y-0 after:right-0 after:w-2 after:bg-gradient-to-l after:from-rose-500/30 after:to-transparent after:z-50"
+      className="player-shell flex min-h-[100dvh] flex-col bg-[#0b0c14] text-white relative overflow-hidden overscroll-none before:pointer-events-none before:fixed before:inset-y-0 before:left-0 before:w-2 before:bg-gradient-to-r before:from-cyan-500/30 before:to-transparent before:z-50 after:pointer-events-none after:fixed after:inset-y-0 after:right-0 after:w-2 after:bg-gradient-to-l after:from-rose-500/30 after:to-transparent after:z-50"
       style={{ "--game-accent": game?.color, "--game-gradient": game?.gradient } as CSSProperties}
     >
       <FloatingReactions />
+      <LeaveGuard />
 
       <div className="mx-auto w-full max-w-md px-4 pt-4 pt-safe relative z-10">
         <div className="glass flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 px-3.5 py-2.5 shadow-lg shadow-black/40 ring-1 ring-white/5">
@@ -72,6 +76,7 @@ export function PlayShell({ children, className, round }: PlayShellProps) {
             <span className="font-mono font-bold tracking-wider text-rose-300 bg-rose-950/50 px-2 py-0.5 rounded-full border border-rose-500/30">
               房 {room?.id}
             </span>
+            <ConnectionBadge className="text-[10px] px-2 py-0.5" />
           </span>
         </div>
       </div>
@@ -85,9 +90,12 @@ export function PlayShell({ children, className, round }: PlayShellProps) {
 
       {/* Bottom dock — sits above the iPhone home indicator thanks to dock-safe. */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-2 px-4 dock-safe">
-        <p className="pointer-events-auto glass rounded-full border border-white/10 px-4 py-2 text-sm font-bold tabular-nums shadow-xl bg-black/60 backdrop-blur-md">
-          得分：<span className="font-black text-cyan-300">{score}</span>
-        </p>
+        <div className="pointer-events-auto relative">
+          <ScoreDelta score={score} />
+          <p className="glass rounded-full border border-white/10 px-4 py-2 text-sm font-bold tabular-nums shadow-xl bg-black/60 backdrop-blur-md">
+            得分：<span className="font-black text-cyan-300">{score}</span>
+          </p>
+        </div>
         <MuteToggle className="pointer-events-auto shadow-lg" />
       </div>
     </main>

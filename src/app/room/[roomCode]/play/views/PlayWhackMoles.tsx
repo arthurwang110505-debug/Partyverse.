@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRoom } from "@/providers/RoomContext";
+import { useSubmitAction } from "@/hooks/useSubmitAction";
 import type { MolesGameState } from "@/engine/whackMoles";
 import { COMBO_SIZE, isMoleUp } from "@/engine/whackMoles";
 import { serverNow } from "@/engine/clock";
@@ -10,7 +11,8 @@ import { RoundTimer } from "@/components/game/RoundTimer";
 import { vibrate } from "@/lib/sound";
 
 export default function PlayWhackMoles() {
-  const { room, player, submitAction } = useRoom();
+  const { room, player } = useRoom();
+  const submit = useSubmitAction();
   const state = room?.gameState as MolesGameState | undefined;
   const hunting = state?.phase === "hunting";
   const [now, setNow] = useState(() => serverNow());
@@ -33,11 +35,11 @@ export default function PlayWhackMoles() {
     const spawn = spawns.findIndex((s) => s.cell === cell && !s.hitBy && t >= s.startAt - 250 && t < s.endAt + 450);
     setFlash({ cell, hit: spawn >= 0, at: t });
     vibrate(spawn >= 0 ? 30 : 10);
-    try {
-      await submitAction({ type: "whack", cell, ...(spawn >= 0 ? { spawn } : {}) });
-    } catch {
-      // Drop it; the next tap still lands.
-    }
+    // High-frequency taps: toast at most once every 4s if the connection dies.
+    await submit(
+      { type: "whack", cell, ...(spawn >= 0 ? { spawn } : {}) },
+      { failMessage: "敲擊沒送出，檢查連線", throttleMs: 4000 },
+    );
   };
 
   return (
@@ -49,7 +51,7 @@ export default function PlayWhackMoles() {
             <h1 className="text-2xl font-black text-white">第 {state.currentRound} 回合，準備…</h1>
             <p className="mt-2 text-sm text-white/60">木頭冒出來（手機和大螢幕同步）就立刻點它！</p>
             <div className="mt-6">
-              <RoundTimer timeLeft={state.timeLeft} total={3} endLabel="開始！" compact />
+              <RoundTimer timeLeft={state.timeLeft} total={3} endLabel="開始！" compact haptic />
             </div>
           </>
         )}
@@ -85,7 +87,7 @@ export default function PlayWhackMoles() {
               })}
             </div>
             <div className="mt-4">
-              <RoundTimer timeLeft={state.timeLeft} total={state.roundDuration} endLabel="本回合結束" compact />
+              <RoundTimer timeLeft={state.timeLeft} total={state.roundDuration} endLabel="本回合結束" compact haptic />
             </div>
           </>
         )}

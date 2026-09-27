@@ -1,6 +1,6 @@
 # PARTYVERSE
 
-One Room. Ten Games. Infinite Chaos.
+One Room. 16 Games. Infinite Chaos.
 
 多人派對遊戲平台：電視當主畫面，手機就是控制器。掃描 QR code 就能立即加入，免下載、免註冊。
 
@@ -30,36 +30,10 @@ npm run dev
 
 ## Database Rules
 
-> **注意：下方是舊版參考規則，不可直接視為目前整房交易流程的正式部署規則。** 新玩家尚未成為成員時，房間根節點的寫入條件會拒絕加入交易；只允許 `players/$playerId` 子節點寫入並不足以授權整房交易。請先審查加入授權設計，不要改成公開讀寫來繞過限制。參閱 [跨裝置加入修正與部署排錯](docs/firebase-join-fix.md)。
+**Deployable rules live in [`database.rules.json`](database.rules.json).**  
+See [docs/firebase-rules.md](docs/firebase-rules.md) for what they allow, how to deploy, and the remaining anti-cheat roadmap.
 
-舊版參考（尚需與目前的加入流程整合驗證）：
-
-```json
-{
-  "rules": {
-    "rooms": {
-      "$roomCode": {
-        ".read": "auth != null",
-        ".write": "auth != null && (!data.exists() || data.child('players').child(auth.uid).exists())",
-        "players": {
-          "$playerId": {
-            ".write": "auth.uid === $playerId || data.parent().parent().child('hostPlayerId').val() === auth.uid"
-          }
-        },
-        "status": {
-          ".write": "data.parent().child('hostPlayerId').val() === auth.uid"
-        },
-        "settings": {
-          ".write": "data.parent().child('hostPlayerId').val() === auth.uid"
-        },
-        "gameState": {
-          ".write": "data.parent().child('players').child(auth.uid).exists()"
-        }
-      }
-    }
-  }
-}
-```
+> Do **not** open the database to public read/write to “fix” join. If phones still get `PERMISSION_DENIED`, read [跨裝置加入修正與部署排錯](docs/firebase-join-fix.md) and confirm the deployed rules match the JSON in this repo.
 
 ## Gameplay/mobile implementation update
 

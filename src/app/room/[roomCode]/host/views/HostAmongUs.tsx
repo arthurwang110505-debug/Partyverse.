@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRoom } from "@/providers/RoomContext";
+import { useGameViewState } from "@/hooks/useGameViewState";
 import { engineRoom } from "@/engine/participants";
 import type { AmongGameState } from "@/engine/amongUs";
 import { HostGameControls } from "@/components/game/HostGameControls";
@@ -15,7 +16,7 @@ import { cn } from "@/lib/utils";
 /** The TV never reveals roles or unreported bodies until the right moment. */
 export default function HostAmongUs() {
   const { room } = useRoom();
-  const state = room?.gameState as AmongGameState | undefined;
+  const state = useGameViewState<AmongGameState>();
   const players = room ? engineRoom(room).players : {};
 
   useEffect(() => {

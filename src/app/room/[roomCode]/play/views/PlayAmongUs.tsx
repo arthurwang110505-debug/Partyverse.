@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRoom } from "@/providers/RoomContext";
 import { useToast } from "@/providers/ToastProvider";
+import { useGameViewState } from "@/hooks/useGameViewState";
 import { engineRoom } from "@/engine/participants";
 import { TASK_TYPES, isAlive, slotDone, type AmongGameState } from "@/engine/amongUs";
 import { Button } from "@/components/ui/Button";
@@ -162,6 +163,142 @@ function TaskGame({ type, onDone, onClose }: { type: number; onDone: () => void;
           </div>
         </>
       )}
+
+      {id === "scan" && (
+        <>
+          <p className="mb-3 text-sm text-white/70">站上掃描器，等待進度跑滿：</p>
+          <div className="mx-auto mb-4 h-4 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full bg-cyan-400 transition-all duration-100"
+              style={{ width: `${Math.min(100, progress)}%` }}
+            />
+          </div>
+          <button
+            type="button"
+            onPointerDown={() => {
+              const id = window.setInterval(() => {
+                setProgress((p) => {
+                  if (p >= 100) {
+                    window.clearInterval(id);
+                    onDone();
+                    return 100;
+                  }
+                  return p + 4;
+                });
+              }, 40);
+              const stop = () => window.clearInterval(id);
+              window.addEventListener("pointerup", stop, { once: true });
+              window.addEventListener("pointercancel", stop, { once: true });
+            }}
+            className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border-4 border-cyan-300 bg-cyan-500/30 text-sm font-black text-cyan-100 active:scale-95"
+          >
+            按住掃描
+          </button>
+        </>
+      )}
+
+      {id === "sample" && (
+        <>
+          <p className="mb-2 text-sm text-white/70">依序點擊試管倒入樣本：</p>
+          <div className="mb-3 flex justify-center gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <span
+                key={i}
+                className={cn(
+                  "flex h-12 w-8 items-end justify-center rounded-b-xl border-2 border-white/30 bg-white/5",
+                  i < progress && "bg-emerald-400/80",
+                )}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              vibrate(15);
+              if (progress + 1 >= 4) onDone();
+              else setProgress(progress + 1);
+            }}
+            className="w-full rounded-2xl border border-emerald-400/40 bg-emerald-500/20 py-4 text-lg font-black text-emerald-100 active:scale-95"
+          >
+            倒入樣本
+          </button>
+        </>
+      )}
+
+      {id === "card" && (
+        <>
+          <p className="mb-3 text-sm text-white/70">左右滑動通過門禁：</p>
+          <div
+            className="relative mx-auto h-24 w-full max-w-xs overflow-hidden rounded-2xl border border-white/20 bg-slate-800"
+            onPointerUp={(e) => {
+              const el = e.currentTarget;
+              const rect = el.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              if (x > rect.width * 0.7) {
+                vibrate(20);
+                onDone();
+              } else {
+                fail();
+              }
+            }}
+          >
+            <div
+              className="absolute inset-y-2 left-2 flex w-20 items-center justify-center rounded-xl bg-cyan-400 text-xs font-black text-black shadow-lg"
+              style={{ transform: `translateX(${Math.min(progress, 160)}px)` }}
+            >
+              卡
+            </div>
+            <p className="absolute inset-0 flex items-center justify-end pr-4 text-xs text-white/40">滑到右側 →</p>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={180}
+            value={progress}
+            onChange={(e) => setProgress(Number(e.target.value))}
+            onPointerUp={() => {
+              if (progress >= 150) onDone();
+              else fail();
+            }}
+            className="mt-3 w-full accent-cyan-400"
+            aria-label="滑動門禁卡"
+          />
+        </>
+      )}
+
+      {id === "asteroids" && (
+        <>
+          <p className="mb-2 text-sm text-white/70">點掉出現的隕石！({progress}/5)</p>
+          <div className="grid grid-cols-3 gap-2">
+            {Array.from({ length: 6 }, (_, i) => {
+              const active = (progress + i) % 6 === i % 3;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    if (!active) {
+                      fail();
+                      return;
+                    }
+                    vibrate(12);
+                    if (progress + 1 >= 5) onDone();
+                    else setProgress(progress + 1);
+                  }}
+                  className={cn(
+                    "flex aspect-square items-center justify-center rounded-2xl border-2 text-2xl transition-all active:scale-90",
+                    active ? "border-amber-300 bg-amber-500/30 animate-pulse" : "border-white/10 bg-white/5 opacity-40",
+                  )}
+                  aria-label={active ? "擊落隕石" : "空位"}
+                >
+                  {active ? "☄️" : "·"}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
     </div>
   );
 }
@@ -169,7 +306,7 @@ function TaskGame({ type, onDone, onClose }: { type: number; onDone: () => void;
 export default function PlayAmongUs() {
   const { room, player, submitAction } = useRoom();
   const { toast } = useToast();
-  const state = room?.gameState as AmongGameState | undefined;
+  const state = useGameViewState<AmongGameState & { iAmImpostor?: boolean }>();
   const players = room ? engineRoom(room).players : {};
   const [openSlot, setOpenSlot] = useState<number | null>(null);
   const [fakeDone, setFakeDone] = useState<number[]>([]);
@@ -184,9 +321,13 @@ export default function PlayAmongUs() {
 
   if (!state || !player) return null;
   const me = player.id;
-  const alive = isAlive(state, me);
-  const impostor = state.impostorIds.includes(me);
-  const mates = state.impostorIds.filter((id) => id !== me);
+  const alive = isAlive(
+    // isAlive only needs deadIds — safe with a stripped impostor list.
+    { ...state, impostorIds: state.impostorIds ?? [] },
+    me,
+  );
+  const impostor = state.iAmImpostor === true || (state.impostorIds ?? []).includes(me);
+  const mates = (state.impostorIds ?? []).filter((id) => id !== me);
   const myTasks = state.tasks[me] ?? [];
   const done = (slot: number) => (impostor ? fakeDone.includes(slot) : slotDone(state, me, slot));
   const cooldown = state.killCooldowns[me] ?? 0;
@@ -348,7 +489,7 @@ export default function PlayAmongUs() {
                 </Button>
               </div>
             )}
-            <RoundTimer timeLeft={state.timeLeft} total={Math.max(45, room?.settings?.timer ?? 75)} endLabel="自動召開會議" compact />
+            <RoundTimer timeLeft={state.timeLeft} total={Math.max(45, room?.settings?.timer ?? 75)} endLabel="自動召開會議" compact haptic />
           </>
         )}
 
@@ -407,6 +548,7 @@ export default function PlayAmongUs() {
               total={state.phase === "discussion" ? 30 : 25}
               endLabel={state.phase === "discussion" ? "開始投票" : "投票截止"}
               compact
+          haptic
             />
           </>
         )}

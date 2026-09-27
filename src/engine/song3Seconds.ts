@@ -51,6 +51,27 @@ export const SONG_LIST: SongItem[] = [
   { id: "s32", title: "Let It Go", artist: "Idina Menzel", category: "西洋流行", lyric: "Let it go, let it go, can't hold it back anymore", options: [] },
   { id: "s33", title: "Someone Like You", artist: "Adele", category: "西洋流行", lyric: "Never mind, I'll find someone like you", options: [] },
   { id: "s34", title: "Dynamite", artist: "BTS", category: "西洋流行", lyric: "'Cause I, I, I'm in the stars tonight", options: [] },
+  { id: "s35", title: "夜空中最亮的星", artist: "逃跑計劃", category: "華語流行", lyric: "夜空中最亮的星 能否聽清", options: [] },
+  { id: "s36", title: "體面", artist: "于文文", category: "電影主題曲", lyric: "該在一起的人 總會在一起", options: [] },
+  { id: "s37", title: "起風了", artist: "買辣椒也用券", category: "華語流行", lyric: "這一路上走走停停 順著少年漂流的痕跡", options: [] },
+  { id: "s38", title: "消愁", artist: "毛不易", category: "華語流行", lyric: "一杯敬朝陽 一杯敬月光", options: [] },
+  { id: "s39", title: "像我這樣的人", artist: "毛不易", category: "華語流行", lyric: "像我這樣的人 總是這一生 辜負那一段似水年華", options: [] },
+  { id: "s40", title: "想見你", artist: "八三夭", category: "影視金曲", lyric: "想見你 只想見你 未來過去 我只想見你", options: [] },
+  { id: "s41", title: "句號", artist: "鄧紫棋", category: "華語流行", lyric: "該不該畫上句號", options: [] },
+  { id: "s42", title: "帶我去找夜生活", artist: "告五人", category: "樂團搖滾", lyric: "帶我去找夜生活", options: [] },
+  { id: "s43", title: "愛人錯過", artist: "告五人", category: "樂團搖滾", lyric: "你是我的 難逃的劫", options: [] },
+  { id: "s44", title: "唯一", artist: "告五人", category: "樂團搖滾", lyric: "如果我變成回憶 請記得我曾為你", options: [] },
+  { id: "s45", title: "擱淺", artist: "周杰倫", category: "華語流行", lyric: "久未放晴的天空 依舊掛著你的笑容", options: [] },
+
+  { id: "s46", title: "怎麼了", artist: "周興哲", category: "華語流行", lyric: "怎麼了 你累了 說好的 幸福呢", options: [] },
+  { id: "s47", title: "說好不哭", artist: "周杰倫", category: "華語流行", lyric: "沒有了我 你還有誰", options: [] },
+  { id: "s48", title: "不為誰而作的歌", artist: "林俊傑", category: "華語流行", lyric: "這首歌 不為誰而作", options: [] },
+  { id: "s49", title: "第一天", artist: "孫燕姿", category: "華語經典", lyric: "第一天 我和你 走在一起", options: [] },
+  { id: "s50", title: "天黑黑", artist: "孫燕姿", category: "華語經典", lyric: "天黑黑 欲落雨", options: [] },
+  { id: "s51", title: "Cruel Summer", artist: "Taylor Swift", category: "西洋流行", lyric: "It's a cruel summer", options: [] },
+  { id: "s52", title: "As It Was", artist: "Harry Styles", category: "西洋流行", lyric: "In this world, it's just us", options: [] },
+  { id: "s53", title: "花に亡霊", artist: "ヨルシカ", category: "日語流行", lyric: "死んでしまったのだろうか", options: [] },
+  { id: "s54", title: "残響散歌", artist: "Aimer", category: "日語流行", lyric: "残響散歌", options: [] },
 ];
 
 /** Correct title + 3 wrong titles (same category first), shuffled. */

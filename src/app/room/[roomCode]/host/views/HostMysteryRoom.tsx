@@ -4,6 +4,7 @@ import { engineRoom } from "@/engine/participants";
 
 import { useEffect, useRef, useState } from "react";
 import { useRoom } from "@/providers/RoomContext";
+import { useGameViewState } from "@/hooks/useGameViewState";
 import { maskCode, MAX_HINTS, WRONG_CODE_PENALTY, type MysteryGameState } from "@/engine/mysteryRoom";
 import { HostGameControls } from "@/components/game/HostGameControls";
 import { HostShell } from "@/components/game/HostShell";
@@ -14,7 +15,7 @@ import { sfx } from "@/lib/sound";
 
 export default function HostMysteryRoom() {
   const { room } = useRoom();
-  const state = room?.gameState as MysteryGameState | undefined;
+  const state = useGameViewState<MysteryGameState>();
   const players = room ? engineRoom(room).players : {};
 
   const phase = state?.phase;

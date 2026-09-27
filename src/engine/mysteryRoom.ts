@@ -189,6 +189,7 @@ export const MysteryRoomEngine: GameEngine<MysteryGameState> = {
     const act = action as MysteryAction;
     if (act?.type === "requestHint") {
       if (state.hintsUsed >= MAX_HINTS || state.hintRevealed >= state.correctCode.length) return state;
+      // Public digit so phones can render the mask without holding the full code.
       return {
         ...state,
         hintRevealed: state.hintRevealed + 1,

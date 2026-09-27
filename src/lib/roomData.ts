@@ -65,5 +65,25 @@ export function parseRoom(data: Record<string, unknown> | null, roomCode: string
         ? undefined
         : arrayValue(data.participantIds).filter((id): id is string => typeof id === "string"),
     contentHistory: (data.contentHistory ?? {}) as Room["contentHistory"],
+    nextGameVotes:
+      data.nextGameVotes && typeof data.nextGameVotes === "object"
+        ? Object.fromEntries(
+            Object.entries(data.nextGameVotes as Record<string, unknown>).filter(
+              (entry): entry is [string, string] => typeof entry[0] === "string" && typeof entry[1] === "string",
+            ),
+          )
+        : undefined,
+    privateHost:
+      data.privateHost && typeof data.privateHost === "object" && !Array.isArray(data.privateHost)
+        ? (data.privateHost as Record<string, unknown>)
+        : undefined,
+    private:
+      data.private && typeof data.private === "object" && !Array.isArray(data.private)
+        ? (Object.fromEntries(
+            Object.entries(data.private as Record<string, unknown>)
+              .filter(([, v]) => v && typeof v === "object" && !Array.isArray(v))
+              .map(([id, v]) => [id, v as Record<string, unknown>]),
+          ) as Room["private"])
+        : undefined,
   };
 }
