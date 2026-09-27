@@ -56,13 +56,21 @@ describe("rng", () => {
 });
 
 describe("simonsays: sequence and taps", () => {
-  it("simonSequence is deterministic, in range and prefix-stable", () => {
+  it("simonSequence is deterministic, in range, fresh per level and has no adjacent repeats", () => {
     const a = simonSequence(42, 5);
-    const b = simonSequence(42, 8);
-    expect(a).toEqual(b.slice(0, 5));
-    for (const q of b) {
+    expect(simonSequence(42, 5)).toEqual(a);
+    for (const q of a) {
       expect(q).toBeGreaterThanOrEqual(0);
       expect(q).toBeLessThan(SIMON_QUADRANTS);
+    }
+    // Every level is a brand-new pattern, not a re-run of the previous one.
+    for (let lv = 3; lv < 12; lv++) {
+      expect(simonSequence(42, lv + 1)).not.toEqual(simonSequence(42, lv).slice(0, lv + 1));
+    }
+    // A quadrant never repeats back-to-back.
+    for (let lv = 3; lv <= 12; lv++) {
+      const seq = simonSequence(42, lv);
+      for (let i = 1; i < seq.length; i++) expect(seq[i]).not.toBe(seq[i - 1]);
     }
     expect(simonSequence(7, 6)).not.toEqual(simonSequence(8, 6));
   });
