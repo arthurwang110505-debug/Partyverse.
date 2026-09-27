@@ -66,3 +66,22 @@ export function normalizeRoomCode(raw: unknown): string {
     .replace(/[^A-Z0-9]/g, "")
     .slice(0, ROOM_CODE_LENGTH);
 }
+
+/**
+ * Firebase RTDB rejects any `undefined` value ("Data returned contains undefined
+ * in property ..."). Deep-clone plain objects/arrays with undefined keys dropped.
+ */
+export function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => (item === undefined ? null : stripUndefined(item))) as unknown as T;
+  }
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      if (item === undefined) continue;
+      out[key] = stripUndefined(item);
+    }
+    return out as T;
+  }
+  return value;
+}

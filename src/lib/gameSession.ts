@@ -59,12 +59,17 @@ function publish(room: Room): Room {
   const full = room.gameState as Record<string, unknown>;
   const { publicState, hostSecrets, playerSecrets } = splitSecrets(room.gameId, full);
   const hasSecrets = Object.keys(hostSecrets).length > 0 || Object.keys(playerSecrets).length > 0;
-  return {
-    ...room,
-    gameState: publicState,
-    privateHost: hasSecrets ? hostSecrets : room.privateHost,
-    private: hasSecrets ? playerSecrets : room.private,
-  };
+  // Firebase rejects `undefined` values, so never emit the key unless there is a value.
+  const { privateHost: _ph, private: _pv, ...base } = room;
+  const next: Room = { ...base, gameState: publicState };
+  if (hasSecrets) {
+    next.privateHost = hostSecrets;
+    next.private = playerSecrets;
+  } else {
+    if (room.privateHost !== undefined) next.privateHost = room.privateHost;
+    if (room.private !== undefined) next.private = room.private;
+  }
+  return next;
 }
 
 function finish(room: Room, now: number): Room {
@@ -88,14 +93,12 @@ function finish(room: Room, now: number): Room {
     winnerId: winnerIds[0] ?? "",
     winnerIds,
   };
+  // Keep private mirrors (when present) so a rematch path can clear them cleanly.
   return {
     ...room,
     status: "RESULTS",
     finishedAt: now,
     gameState: revealed,
-    // Keep private mirrors so a rematch path can clear them cleanly.
-    privateHost: room.privateHost,
-    private: room.private,
   };
 }
 

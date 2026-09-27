@@ -33,7 +33,7 @@ import {
   rememberEndedRoom,
   rememberRoomSession,
 } from "@/lib/roomSession";
-import { generateRoomCode, pickAvatar, sanitizeNickname } from "@/lib/utils";
+import { generateRoomCode, pickAvatar, sanitizeNickname, stripUndefined } from "@/lib/utils";
 import { getGameEngine } from "@/engine";
 import { sfx } from "@/lib/sound";
 import { parseRoom } from "@/lib/roomData";
@@ -747,7 +747,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       };
       if (db && !localModeRef.current) {
         const result = await runTransaction(ref(db, `rooms/${current.id}`), (latest) =>
-          latest ? guarded(latest as Room) : undefined,
+          latest ? stripUndefined(guarded(latest as Room)) : undefined,
         );
         if (!result.committed) throw new Error("房間已結束或操作未完成");
       } else if (!(await updateLocalRoom(current.id, guarded))) {
@@ -831,7 +831,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       };
       if (db && !localModeRef.current) {
         const result = await runTransaction(ref(db, `rooms/${room.id}`), (current) =>
-          current ? apply(current as Room) : undefined,
+          current ? stripUndefined(apply(current as Room)) : undefined,
         );
         if (!result.committed) throw new Error("投票沒有送出");
       } else if (!(await updateLocalRoom(room.id, apply))) {
@@ -863,7 +863,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         applyRoomAction(current, user.uid, action, expected, Date.now() + serverOffset.current);
       if (db && !localModeRef.current) {
         const result = await runTransaction(ref(db, `rooms/${room.id}`), (current) =>
-          current ? apply(current as Room) : undefined,
+          current ? stripUndefined(apply(current as Room)) : undefined,
         );
         if (!result.committed) throw new Error("操作沒有送出，房間可能已結束");
       } else if (!(await updateLocalRoom(room.id, apply))) {
@@ -949,7 +949,9 @@ export function RoomProvider({ children }: { children: ReactNode }) {
           return advanceRoomGame(current, Date.now() + serverOffset.current, true);
         };
         if (db && !localModeRef.current) {
-          await runTransaction(ref(db, `rooms/${roomId}`), (current) => (current ? apply(current as Room) : undefined));
+          await runTransaction(ref(db, `rooms/${roomId}`), (current) =>
+            current ? stripUndefined(apply(current as Room)) : undefined,
+          );
         } else {
           await updateLocalRoom(roomId, apply);
         }
