@@ -16,7 +16,6 @@ import type { Room } from "@/types";
 /** Fields that must never sit on the public gameState blob. */
 export const SECRET_FIELDS_BY_GAME: Record<string, string[]> = {
   whoisundercoveragent: ["playerWords", "undercoverPlayerId", "undercoverWord", "civilianWord"],
-  amongus: ["impostorIds"],
   drawandguess: ["prompt"],
   mysteryroom: ["correctCode", "playerClues"],
 };
@@ -60,20 +59,6 @@ export function splitSecrets(gameId: string, fullState: Record<string, unknown>)
     const words = (hostSecrets.playerWords ?? {}) as Record<string, string>;
     for (const [id, word] of Object.entries(words)) {
       playerSecrets[id] = { ...(playerSecrets[id] ?? {}), myWord: word };
-    }
-  }
-
-  if (gameId === "amongus") {
-    const impostors = Array.isArray(hostSecrets.impostorIds)
-      ? (hostSecrets.impostorIds as string[])
-      : [];
-    for (const id of impostors) {
-      playerSecrets[id] = {
-        ...(playerSecrets[id] ?? {}),
-        isImpostor: true,
-        // Teammates only — never the full living roster beyond impostors.
-        impostorMates: impostors.filter((other) => other !== id),
-      };
     }
   }
 
@@ -156,17 +141,6 @@ export function viewGameState(
     if (playerId) {
       view.playerWords = { [playerId]: mine.myWord };
     }
-  }
-
-  // Among Us: only whether *I* am impostor + mate ids.
-  if (mine.isImpostor === true) {
-    const mates = Array.isArray(mine.impostorMates) ? (mine.impostorMates as string[]) : [];
-    view.impostorIds = playerId ? [playerId, ...mates.filter((id) => id !== playerId)] : mates;
-    view.iAmImpostor = true;
-  } else if (room.gameId === "amongus") {
-    // Crew never see the impostor list on the wire.
-    view.impostorIds = [];
-    view.iAmImpostor = false;
   }
 
   // Draw: drawer-only prompt; guessers get category + length only.

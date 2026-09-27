@@ -15,7 +15,7 @@ import { MOLES_GAME_ID } from "./whackMoles";
 import { SIMON_GAME_ID } from "./simonSays";
 import { CHAIN_GAME_ID } from "./wordChain";
 import { BRAIN_GAME_ID } from "./brainTeaser";
-import { AMONG_GAME_ID } from "./amongUs";
+import { FOLLOW_GAME_ID } from "./followMe";
 
 function createMockRoom(gameId: string): Room<any> {
   return {
@@ -59,7 +59,7 @@ describe("All 16 Games Engine Registry", () => {
       SIMON_GAME_ID,
       CHAIN_GAME_ID,
       BRAIN_GAME_ID,
-      AMONG_GAME_ID,
+      FOLLOW_GAME_ID,
     ];
     for (const id of ids) {
       expect(isPlayable(id)).toBe(true);

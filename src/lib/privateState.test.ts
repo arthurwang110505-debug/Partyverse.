@@ -48,29 +48,28 @@ describe("privateState split / view", () => {
     expect(view.undercoverWord).toBeUndefined();
   });
 
-  it("hides impostor ids from crew phones", () => {
-    const room = testRoom("amongus", 5);
-    room.gameState = { phase: "tasks", tasksCompleted: 0, tasksTotal: 8 };
-    const crewView = viewGameState(room, "p1", {
-      myPrivate: {},
-      hostSecrets: { impostorIds: ["p4", "p5"] },
-    });
-    expect(crewView.impostorIds).toEqual([]);
-    expect(crewView.iAmImpostor).toBe(false);
-
-    const impView = viewGameState(room, "p4", {
-      myPrivate: { isImpostor: true, impostorMates: ["p5"] },
-    });
-    expect(impView.iAmImpostor).toBe(true);
-    expect(impView.impostorIds).toEqual(["p4", "p5"]);
+  it("games without secrets publish their state untouched", () => {
+    const room = testRoom("followme", 4);
+    const full = {
+      phase: "command",
+      command: 2,
+      answers: { p1: 2 },
+      roundPoints: { p1: 15 },
+      streaks: { p1: 1 },
+      currentScores: { p1: 15 },
+    };
+    room.gameState = full;
+    const view = viewGameState(room, "p1");
+    expect(view).toEqual({ ...full, displayCode: "••••" });
+    expect(splitSecrets("followme", full).hostSecrets).toEqual({});
   });
 
   it("hydrates host state for the engine clock", () => {
     const hydrated = hydrateGameState(
-      { phase: "tasks", tasksCompleted: 1 },
-      { impostorIds: ["p2"] },
+      { phase: "drawing", strokes: [] },
+      { prompt: { id: "d1", word: "捷運" } },
     );
-    expect(hydrated).toEqual({ phase: "tasks", tasksCompleted: 1, impostorIds: ["p2"] });
+    expect(hydrated).toEqual({ phase: "drawing", strokes: [], prompt: { id: "d1", word: "捷運" } });
   });
 
   it("keeps draw prompt off public state except category", () => {

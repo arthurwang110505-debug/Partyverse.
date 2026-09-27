@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   description,
   applicationName: "PARTYVERSE",
-  keywords: ["派對遊戲", "多人遊戲", "party game", "multiplayer", "bomb countdown", "破冰遊戲", "Among Us", "你畫我猜"],
+  keywords: ["派對遊戲", "多人遊戲", "party game", "multiplayer", "bomb countdown", "破冰遊戲", "跟著做", "反應遊戲", "你畫我猜"],
   openGraph: {
     type: "website",
     url: siteUrl,

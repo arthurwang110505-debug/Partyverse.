@@ -466,43 +466,44 @@ describe("full match playthroughs (all games reach results)", () => {
     expect(s.winnerId).toBe("p1");
   });
 
-  it("amongus: crew finish every task and win", () => {
-    const room = playMatch("amongus", (r, runner) => {
-      const s = fullState<{ phase: string; impostorIds: string[]; tasks: Record<string, number[]>; taskMask: Record<string, number> }>(r);
-      if (s.phase !== "tasks") return;
-      for (const id of playerIds(r)) {
-        if (s.impostorIds.includes(id)) continue;
-        const slot = (s.tasks[id] ?? []).findIndex((_, i) => ((s.taskMask[id] ?? 0) & (1 << i)) === 0);
-        if (slot >= 0) runner.submit(id, { type: "completeTask", slot });
-      }
-    });
-    const s = fullState<{ winnerTeam: string; impostorIds: string[]; winnerIds: string[] }>(room);
-    expect(s.winnerTeam).toBe("crew");
-    expect(s.winnerIds).not.toContain(s.impostorIds[0]);
-    expect(room.gameState.winnerIds).toEqual(s.winnerIds);
+  it("followme: everyone follows every command, streaks climb, a champion emerges", () => {
+    const room = playMatch(
+      "followme",
+      (r, runner) => {
+        const s = r.gameState as { phase: string; command: number; answers: Record<string, number> };
+        if (s.phase !== "command") return;
+        for (const id of playerIds(r)) {
+          if (s.answers[id] === undefined) runner.submit(id, { type: "act", choice: s.command });
+        }
+      },
+      { settings: { rounds: 6, timer: 3 } },
+    );
+    const s = room.gameState as { currentScores: Record<string, number>; winnerId: string; streaks: Record<string, number> };
+    // Six perfect commands: at least base 10 each, plus speed and streak bonuses.
+    for (const id of playerIds(room)) {
+      expect(s.currentScores[id]).toBeGreaterThanOrEqual(6 * 10);
+      expect(s.streaks[id]).toBeGreaterThanOrEqual(3);
+    }
+    expect(s.winnerId).toBeTruthy();
   });
 
-  it("amongus: the impostor picks off crew until they win", () => {
-    const room = playMatch("amongus", (r, runner) => {
-      const s = fullState<{ phase: string; impostorIds: string[]; deadIds: string[]; killCooldowns: Record<string, number> }>(r);
-      if (s.phase !== "tasks") return;
-      const imp = s.impostorIds[0];
-      const target = playerIds(r).find((id) => id !== imp && !s.deadIds.includes(id));
-      if (target && (s.killCooldowns[imp] ?? 0) === 0) runner.submit(imp, { type: "kill", targetId: target });
-    });
-    expect(room.gameState.winnerTeam).toBe("impostor");
-  });
-
-  it("amongus: a meeting votes the impostor out", () => {
-    const room = playMatch("amongus", (r, runner) => {
-      const s = fullState<{ phase: string; impostorIds: string[]; votes: Record<string, string>; deadIds: string[] }>(r);
-      if (s.phase === "tasks") runner.submit(playerIds(r).find((id) => !s.impostorIds.includes(id))!, { type: "emergency" });
-      if (s.phase === "discussion" || s.phase === "voting") {
-        for (const id of playerIds(r)) if (!s.votes[id]) runner.submit(id, { type: "vote", targetId: s.impostorIds[0] });
-      }
-    });
-    expect(room.gameState.winnerTeam).toBe("crew");
-    expect(room.gameState.winReason).toContain("內鬼");
+  it("followme: wrong taps bleed points and streaks while no-shows stay flat", () => {
+    const room = playMatch(
+      "followme",
+      (r, runner) => {
+        const s = r.gameState as { phase: string; command: number; answers: Record<string, number> };
+        if (s.phase !== "command") return;
+        // p1 always right, p2 always presses the wrong button, p3/p4 never tap.
+        if (s.answers["p1"] === undefined) runner.submit("p1", { type: "act", choice: s.command });
+        if (s.answers["p2"] === undefined) runner.submit("p2", { type: "act", choice: (s.command + 1) % 4 });
+      },
+      { settings: { rounds: 6, timer: 2 } },
+    );
+    const s = room.gameState as { currentScores: Record<string, number>; winnerId: string };
+    expect(s.currentScores["p1"]).toBeGreaterThanOrEqual(6 * 10);
+    expect(s.currentScores["p2"]).toBe(0); // wrong taps clamp at zero, streak dead
+    expect(s.currentScores["p3"]).toBe(0);
+    expect(s.winnerId).toBe("p1");
   });
 
   it("registers exactly the sixteen games", () => {
@@ -523,7 +524,7 @@ describe("full match playthroughs (all games reach results)", () => {
         "simonsays",
         "wordchain",
         "brainteaser",
-        "amongus",
+        "followme",
       ].sort(),
     );
   });

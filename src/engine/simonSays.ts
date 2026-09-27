@@ -44,16 +44,25 @@ export function repeatSeconds(level: number): number {
 const REVEAL_SECONDS = 4;
 
 /**
- * Deterministic sequence stream: the first `length` outputs are always the
- * prefix of any longer stream from the same seed, so level N+1 extends level
- * N and every client derives the identical pattern from state alone.
+ * Deterministic, level-specific sequence. Mixing the level into the stream
+ * seed gives every level a brand-new pattern instead of re-showing the same
+ * growing prefix, and a quadrant never appears twice in a row so patterns
+ * stay varied. The draw mixes all 32 bits each step (the low bits of a bare
+ * LCG would cycle through a fixed quadrant pattern regardless of seed).
+ * Every client still derives the identical sequence from state alone, so
+ * host and phones agree.
  */
 export function simonSequence(seed: number, length: number): number[] {
   const seq: number[] = [];
-  let s = seed >>> 0;
-  for (let i = 0; i < length; i++) {
-    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-    seq.push(s % SIMON_QUADRANTS);
+  let s = (Math.imul(seed >>> 0, 0x9e3779b1) ^ Math.imul(length + 1, 0x85ebca6b)) >>> 0;
+  while (seq.length < length) {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    const q = ((t ^ (t >>> 14)) >>> 0) % SIMON_QUADRANTS;
+    if (seq.length > 0 && q === seq[seq.length - 1]) continue;
+    seq.push(q);
   }
   return seq;
 }

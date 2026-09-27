@@ -18,10 +18,7 @@ const COLLECTIONS: Record<string, { arrays: string[]; maps: string[] }> = {
   simonsays: { arrays: ["outThisRound", "maxedOut"], maps: ["playerProgress"] },
   wordchain: { arrays: ["chain", "objectors"], maps: ["votes"] },
   brainteaser: { arrays: ["options", "riddleOrder", "usedPromptIds"], maps: ["answers", "roundPoints"] },
-  amongus: {
-    arrays: ["impostorIds", "deadIds", "bodies", "meetingBodies"],
-    maps: ["tasks", "taskMask", "killCooldowns", "emergencyUsed", "votes"],
-  },
+  followme: { arrays: [], maps: ["answers", "roundPoints", "streaks"] },
 };
 export function arrayValue(value: unknown): unknown[] {
   if (Array.isArray(value)) return value.filter((item) => item != null);
@@ -48,11 +45,6 @@ export function normalizeGameState(gameId: string, value: unknown): Record<strin
       .filter((stroke) => stroke && typeof stroke === "object")
       .map((stroke) => ({ ...(stroke as object), points: arrayValue((stroke as { points?: unknown }).points) }));
     state.canvasVersion ??= 0;
-  }
-  if (gameId === "amongus") {
-    state.tasks = Object.fromEntries(
-      Object.entries(state.tasks as Record<string, unknown>).map(([id, list]) => [id, arrayValue(list)]),
-    );
   }
   if (gameId === "fireworkmaster") {
     // Nested stroke arrays can come back as index-keyed objects.
