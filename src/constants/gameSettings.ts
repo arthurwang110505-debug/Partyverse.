@@ -125,14 +125,15 @@ const PROFILES: Record<string, Partial<GameSettingsProfile>> = {
     defaultRounds: 8,
     maxRounds: 20,
   },
-  amongus: {
-    timerLabel: "每輪任務秒數",
-    timerHint: "時間到會自動召開會議；也可以隨時回報屍體或按緊急按鈕。",
-    timerMin: 45,
-    timerMax: 180,
-    defaultTimer: 75,
-    maxRounds: 1,
-    defaultRounds: 1,
+  followme: {
+    timerLabel: "每題反應秒數",
+    timerHint: "每個指令的作答時間，後面指令會自動越出越快。",
+    timerMin: 2,
+    timerMax: 6,
+    defaultTimer: 4,
+    roundsLabel: "指令數",
+    defaultRounds: 24,
+    maxRounds: 40,
   },
 };
 export function gameSettingsProfile(gameId: string): GameSettingsProfile {

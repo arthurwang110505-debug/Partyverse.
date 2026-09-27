@@ -21,7 +21,7 @@ import PlayWhackMoles from "./views/PlayWhackMoles";
 import PlaySimonSays from "./views/PlaySimonSays";
 import PlayWordChain from "./views/PlayWordChain";
 import PlayBrainTeaser from "./views/PlayBrainTeaser";
-import PlayAmongUs from "./views/PlayAmongUs";
+import PlayFollowMe from "./views/PlayFollowMe";
 
 const VIEWS: Record<string, ComponentType> = {
   bombcountdown: PlayBombCountdown,
@@ -39,7 +39,7 @@ const VIEWS: Record<string, ComponentType> = {
   simonsays: PlaySimonSays,
   wordchain: PlayWordChain,
   brainteaser: PlayBrainTeaser,
-  amongus: PlayAmongUs,
+  followme: PlayFollowMe,
 };
 
 /** Dispatch first: never interpret another game's state as bomb state. */

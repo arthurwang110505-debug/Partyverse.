@@ -5,7 +5,6 @@ import { RIDDLES } from "./brainTeaser";
 import { MYSTERY_CASES } from "./mysteryRoom";
 import { DRAW_PROMPTS } from "./drawAndGuess";
 import { WORD_PAIRS, pickWordPair } from "./whoIsUndercover";
-import { TASK_TYPES } from "./amongUs";
 
 describe("content banks", () => {
   it("songs have unique ids, lyrics, and four distinct options", () => {
@@ -86,13 +85,5 @@ describe("content banks", () => {
         expect(cl.content.includes(c.correctCode), `${c.id}/${cl.id} leaks code`).toBe(false);
       }
     }
-  });
-
-  it("among-us task types are unique", () => {
-    assertUniqueIds(
-      TASK_TYPES.map((t) => t.id),
-      "TASK_TYPES",
-    );
-    expect(TASK_TYPES.length).toBeGreaterThanOrEqual(6);
   });
 });

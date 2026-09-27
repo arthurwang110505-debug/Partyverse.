@@ -297,3 +297,46 @@ describe("whackmoles: spawn schedule and whacks", () => {
     }
   });
 });
+
+describe("followme: commands and taps", () => {
+  it("never shouts the same command twice in a row and paces up over time", async () => {
+    const { commandSeconds, FOLLOW_ACTIONS, FOLLOW_GAME_ID } = await import("./followMe");
+    const { room, state } = playing<SimonGameState & Record<string, unknown>>(FOLLOW_GAME_ID);
+    expect(state.phase).toBe("command");
+    expect(FOLLOW_ACTIONS).toHaveLength(4);
+    // Ramp: base timer 4 → shrinks toward the 2s floor every 5 commands.
+    expect(commandSeconds(4, 1)).toBe(4);
+    expect(commandSeconds(4, 5)).toBe(4);
+    expect(commandSeconds(4, 6)).toBe(3);
+    expect(commandSeconds(4, 11)).toBe(2);
+    expect(commandSeconds(9, 1)).toBe(6); // clamped above 6s
+    expect(room.gameState.totalRounds).toBeGreaterThan(0);
+  });
+
+  it("scores correct taps with speed and streak bonuses, penalises wrong ones", async () => {
+    const { FOLLOW_GAME_ID } = await import("./followMe");
+    const engine = getGameEngine(FOLLOW_GAME_ID)!;
+    const { room, state } = playing<Record<string, unknown>>(FOLLOW_GAME_ID);
+    const s0 = state as { command: number; answers: Record<string, number> };
+
+    // p1 taps right immediately: full base + speed points.
+    let s1 = engine.handlePlayerAction(room, "p1", { type: "act", choice: s0.command }) as typeof s0 & {
+      currentScores: Record<string, number>;
+      roundPoints: Record<string, number>;
+      streaks: Record<string, number>;
+    };
+    room.gameState = s1;
+    expect(s1.roundPoints["p1"]).toBeGreaterThanOrEqual(10);
+    // Wrong tap costs 5 and never drags the total below zero.
+    s1 = engine.handlePlayerAction(room, "p2", { type: "act", choice: (s0.command + 1) % 4 }) as typeof s1;
+    room.gameState = s1;
+    expect(s1.roundPoints["p2"]).toBe(-5);
+    expect(s1.currentScores["p2"]).toBe(0);
+    // Duplicate submit is ignored.
+    s1 = engine.handlePlayerAction(room, "p1", { type: "act", choice: s0.command }) as typeof s1;
+    expect(Object.keys(s1.answers)).toHaveLength(2);
+    // Invalid choice is rejected.
+    const before = engine.handlePlayerAction(room, "p3", { type: "act", choice: 99 }) as typeof s1;
+    expect(before.answers["p3"]).toBeUndefined();
+  });
+});

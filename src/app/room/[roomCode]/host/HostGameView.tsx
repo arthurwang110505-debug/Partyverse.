@@ -20,7 +20,7 @@ import HostWhackMoles from "./views/HostWhackMoles";
 import HostSimonSays from "./views/HostSimonSays";
 import HostWordChain from "./views/HostWordChain";
 import HostBrainTeaser from "./views/HostBrainTeaser";
-import HostAmongUs from "./views/HostAmongUs";
+import HostFollowMe from "./views/HostFollowMe";
 
 const VIEWS: Record<string, ComponentType> = {
   bombcountdown: HostBombCountdown,
@@ -38,7 +38,7 @@ const VIEWS: Record<string, ComponentType> = {
   simonsays: HostSimonSays,
   wordchain: HostWordChain,
   brainteaser: HostBrainTeaser,
-  amongus: HostAmongUs,
+  followme: HostFollowMe,
 };
 
 /** Dispatch first: never interpret another game's state as bomb state. */
