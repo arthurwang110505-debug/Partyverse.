@@ -14,6 +14,7 @@ Source of truth for deployable rules: [`database.rules.json`](../database.rules.
 | Read room | Members can read; non-members can probe existence for join |
 | Join | Authenticated user may add **their own** `players/{uid}` node (nickname ≤ 16) |
 | Host-only | `settings`, host migration, kick via host uid check |
+| `sessionPlan` | Host-written room field (random party session). The room-level `.validate` lists required children only, so extra host-written fields such as `sessionPlan` need no rule change. |
 | gameState | Any **member** may write (needed today because phones submit actions via whole-room transactions). **Secret fields are stripped** into `privateHost` / `private/{uid}` by the client session layer. |
 | privateHost | **Host only** read/write — roles, words, passcodes for the engine clock |
 | private/{uid} | That player (and host) may read; **host only** writes |

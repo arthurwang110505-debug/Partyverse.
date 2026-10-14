@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Crown } from "lucide-react";
+import { ArrowLeft, Crown, Dices } from "lucide-react";
 import { GAMES } from "@/constants/games";
+import { PLAY_MODES } from "@/constants/playModes";
 import { isPlayable } from "@/engine";
 import Navbar from "@/components/Navbar";
 
@@ -33,6 +34,47 @@ export default function CreateSelectorPage() {
           <h1 className="mb-2 text-3xl font-bold md:text-4xl">選擇你想主持的遊戲</h1>
           <p className="text-sm text-white/40">選定遊戲後即可設定人數與規則，獲得專屬房間代碼與 QR Code</p>
         </header>
+
+        {/* Time-boxed random playlists: pick a length, let the draw pick the games. */}
+        <section className="mb-10" aria-labelledby="random-heading">
+          <div className="mb-4">
+            <h2 id="random-heading" className="flex items-center gap-2 text-lg font-bold text-white">
+              <Dices className="h-5 w-5 text-cyan-300" aria-hidden="true" />
+              隨機時段派對
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-white/45">
+              沒時間挑遊戲？選一個長度，系統隨機抽出剛好塞得滿的遊戲清單，並盡量避開你們剛玩過的遊戲。
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {PLAY_MODES.map((mode) => (
+              <Link
+                key={mode.id}
+                href={`/random?mode=${mode.id}`}
+                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 transition-all hover:-translate-y-1 hover:border-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                <span
+                  className="pointer-events-none absolute inset-x-0 -top-16 h-24 opacity-25 blur-2xl"
+                  style={{ background: mode.gradient }}
+                  aria-hidden="true"
+                />
+                <span className="relative block text-2xl" aria-hidden="true">
+                  {mode.icon}
+                </span>
+                <span className="relative mt-2 block text-base font-bold text-white">{mode.label}</span>
+                <span className="relative mt-1 block text-xs leading-relaxed text-white/50">{mode.tagline}</span>
+                <span
+                  className="relative mt-3 inline-block text-xs font-bold"
+                  style={{ color: mode.color }}
+                >
+                  抽一段來玩 →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <h2 className="mb-4 text-lg font-bold text-white">或者自己挑一款</h2>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {playableGames.map((game) => (

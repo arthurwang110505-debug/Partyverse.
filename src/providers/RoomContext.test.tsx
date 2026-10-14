@@ -126,6 +126,7 @@ vi.mock("next/link", () => ({
 }));
 
 const { RoomProvider, useRoom } = await import("./RoomContext");
+const { normalizeSettings } = await import("@/constants/gameSettings");
 const { forgetRoomSession } = await import("@/lib/roomSession");
 const { RoomGate } = await import("@/app/room/[roomCode]/RoomGate");
 const { ToastProvider } = await import("./ToastProvider");
@@ -167,6 +168,30 @@ async function createRoom() {
     code = await api!.createRoom("bombcountdown", "客廳電視");
   });
   return code;
+}
+
+/** A hand-written playlist, so the assertions do not depend on a random draw. */
+function flashPlan() {
+  return {
+    mode: "flash" as const,
+    budgetMinutes: 3,
+    entries: [
+      { gameId: "followme", minutes: 1, settings: normalizeSettings("followme", { timer: 2, rounds: 10 }) },
+      { gameId: "brainteaser", minutes: 2, settings: normalizeSettings("brainteaser", { timer: 10, rounds: 4 }) },
+    ],
+    played: [],
+    startedAt: 1000,
+  };
+}
+
+/** Publish a room snapshot into the fake database and hand it to the provider. */
+async function publishRoom(roomCode: string, patch: Record<string, unknown>) {
+  const current = fake.read(`rooms/${roomCode}`) as Record<string, unknown>;
+  fake.write(`rooms/${roomCode}`, { ...current, ...patch });
+  // Refreshing auth re-subscribes the room listener, which is how the fake
+  // database hands out the new snapshot.
+  await flush("system");
+  await flush("rooms");
 }
 
 async function flush(which: "system" | "rooms") {
@@ -287,5 +312,88 @@ describe("creating a room after closing one", () => {
     await flush("system");
     await flush("rooms");
     expect(nav.replace).toEqual([`/room/${code}/play`]);
+  });
+
+  it("draws a playlist at create time and rolls it game by game", async () => {
+    const plan = flashPlan();
+    render(<CreateTree />);
+    let code = "";
+    await act(async () => {
+      code = await api!.createRoom("followme", "客廳電視", plan.entries[0].settings, plan);
+    });
+
+    // The room carries the whole drawn session, not just its first game.
+    const stored = fake.read(`rooms/${code}`) as { gameId: string; sessionPlan: { entries: { gameId: string }[] } };
+    expect(stored.gameId).toBe("followme");
+    expect(stored.sessionPlan.entries.map((entry) => entry.gameId)).toEqual(["followme", "brainteaser"]);
+
+    await flush("rooms");
+    expect(api!.room?.sessionPlan?.mode).toBe("flash");
+
+    // Game one ends on the results screen; the host rolls on to game two.
+    await publishRoom(code, { status: "RESULTS" });
+    let next: unknown = "unset";
+    await act(async () => {
+      next = await api!.advanceSession();
+    });
+    expect(next).not.toBeNull();
+
+    const rolled = fake.read(`rooms/${code}`) as {
+      gameId: string;
+      status: string;
+      settings: { timer: number };
+      sessionPlan: { played: string[]; entries: { gameId: string }[] };
+    };
+    expect(rolled.gameId).toBe("brainteaser");
+    expect(rolled.status).toBe("LOBBY");
+    // The entry's suggested settings came with it, ready for the host to tweak.
+    expect(rolled.settings.timer).toBe(10);
+    expect(rolled.sessionPlan.played).toEqual(["followme"]);
+    expect(rolled.sessionPlan.entries.map((entry) => entry.gameId)).toEqual(["brainteaser"]);
+
+    // A reloaded TV (new provider) reads the rolled room — and its session — back.
+    cleanup();
+    render(<CreateTree />);
+    await flush("system");
+    await flush("rooms");
+    expect(api!.room?.gameId).toBe("brainteaser");
+    expect(api!.room?.sessionPlan?.played).toEqual(["followme"]);
+
+    // Last game ends: the session closes instead of switching anywhere.
+    await publishRoom(code, { status: "RESULTS" });
+    let finished: unknown = "unset";
+    await act(async () => {
+      finished = await api!.advanceSession();
+    });
+    expect(finished).toBeNull();
+    const done = fake.read(`rooms/${code}`) as {
+      status: string;
+      sessionPlan: { entries: unknown[]; completedAt: number };
+    };
+    expect(done.status).toBe("RESULTS");
+    expect(done.sessionPlan.entries).toEqual([]);
+    expect(done.sessionPlan.completedAt).toBeGreaterThan(0);
+  });
+
+  it("starts a drawn session from a waiting lobby, and drops it on a manual switch", async () => {
+    render(<CreateTree />);
+    const code = await createRoom();
+    await flush("rooms");
+    expect(api!.room?.id).toBe(code);
+
+    await act(async () => {
+      await api!.startSession(flashPlan());
+    });
+    const started = fake.read(`rooms/${code}`) as { gameId: string; sessionPlan: { entries: unknown[] } };
+    expect(started.gameId).toBe("followme");
+    expect(started.sessionPlan.entries).toHaveLength(2);
+
+    // Picking a different game by hand means leaving the random session behind.
+    await act(async () => {
+      await api!.switchGame("brainteaser");
+    });
+    const switched = fake.read(`rooms/${code}`) as { gameId: string; sessionPlan?: unknown };
+    expect(switched.gameId).toBe("brainteaser");
+    expect(switched.sessionPlan).toBeUndefined();
   });
 });

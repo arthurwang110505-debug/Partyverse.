@@ -33,6 +33,41 @@ export interface RoomSettings {
   ageMode: "family" | "adults";
 }
 
+/** The three time-boxed random-party modes: 3 / 5 / 10 minutes of games. */
+export type PlayModeId = "flash" | "standard" | "marathon";
+
+/** One game of a randomized party-session playlist. */
+export interface RoomSessionEntry {
+  gameId: string;
+  /** Minutes the playlist budgeted for this game. */
+  minutes: number;
+  /**
+   * Settings suggested so the game fits its slot. A suggestion only — the host
+   * can still change everything in the lobby before starting.
+   */
+  settings: RoomSettings;
+  /** True when the draw had to repeat a game because every candidate was used. */
+  repeated?: boolean;
+}
+
+/**
+ * A randomized, time-boxed playlist attached to a room.
+ *
+ * `entries[0]` is the game currently in play (or waiting in the lobby), the rest
+ * queue behind it. Advancing moves `entries[0]` into `played` and promotes the
+ * next entry, so `played.length + entries.length` is the size of the session.
+ */
+export interface RoomSessionPlan {
+  mode: PlayModeId;
+  budgetMinutes: number;
+  entries: RoomSessionEntry[];
+  /** Games finished (or skipped) earlier in this session, in play order. */
+  played: string[];
+  startedAt: number;
+  /** Set once the last entry has been played: the session is over. */
+  completedAt?: number;
+}
+
 export interface ReactionItem {
   id: string;
   emoji: string;
@@ -73,6 +108,11 @@ export interface Room<S = Record<string, unknown>> {
    * Cleared when the host starts a rematch or switches games.
    */
   nextGameVotes?: Record<string, string>;
+  /**
+   * Active randomized party session ("3分鐘快閃" / "5分鐘正常" / "10分鐘最久").
+   * Absent for rooms that were created by picking a single game.
+   */
+  sessionPlan?: RoomSessionPlan;
   /**
    * Host-only secret mirror of gameState fields (roles, words, passcodes).
    * Engines hydrate from this; phones never receive it unless they are host.

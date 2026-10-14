@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: siteUrl, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${siteUrl}/games`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${siteUrl}/random`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
     { url: `${siteUrl}/join`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     ...GAMES.map((game) => ({
       url: `${siteUrl}/games/${game.id}`,

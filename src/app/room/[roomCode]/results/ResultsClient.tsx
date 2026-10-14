@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Gamepad2, Home, RotateCcw, Sparkles } from "lucide-react";
+import { Copy, Dices, Gamepad2, Home, Pause, Play, RotateCcw, Sparkles, Timer } from "lucide-react";
 import { useRoom } from "@/providers/RoomContext";
 import { GAMES } from "@/constants/games";
 import { isPlayable } from "@/engine";
-import type { Achievement } from "@/types";
+import { buildPlaylist, toSessionPlan } from "@/lib/playlist";
+import { loadPlayHistory, rememberPlayedGame } from "@/lib/playHistory";
+import { PlayModePicker } from "@/components/game/PlayModePicker";
+import { SessionPlanPanel } from "@/components/game/SessionPlanPanel";
+import type { Achievement, PlayModeId } from "@/types";
 import type { BombGameState } from "@/engine/bombCountdown";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { ErrorNote } from "@/components/ui/ErrorNote";
@@ -35,6 +39,8 @@ interface RankedPlayer {
 const MEDALS = ["🥇", "🥈", "🥉"];
 const PODIUM_ORDER = [1, 0, 2];
 const REACTIONS = ["🎉", "👑", "🔥", "💩", "👏", "❤️"];
+/** Grace period before a random session rolls into the next game on its own. */
+const AUTO_ADVANCE_SECONDS = 20;
 
 /** Podium score with a count-up entrance animation. */
 function AnimatedScore({ value, className }: { value: number; className?: string }) {
@@ -44,8 +50,15 @@ function AnimatedScore({ value, className }: { value: number; className?: string
 
 export default function ResultsClient({ roomCode }: Props) {
   const router = useRouter();
-  const { room, player, isHost, rematch, endRoom, switchGame, sendReaction, voteNextGame } = useRoom();
+  const { room, player, isHost, rematch, endRoom, switchGame, sendReaction, voteNextGame, startSession, advanceSession } =
+    useRoom();
   const [restarting, setRestarting] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
+  const [autoCountdown, setAutoCountdown] = useState<number | null>(AUTO_ADVANCE_SECONDS);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [sessionMode, setSessionMode] = useState<PlayModeId>("standard");
+  const [drawing, setDrawing] = useState(false);
+  const advancingRef = useRef(false);
   const [error, setError] = useState("");
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
@@ -84,6 +97,67 @@ export default function ResultsClient({ roomCode }: Props) {
   const totalScore = ranked.reduce((sum, r) => sum + r.score, 0);
   const leader = ranked[0];
   const recap = useMemo(() => (room ? buildMatchRecap(room) : []), [room]);
+
+  // ---- Randomized party session ("3分鐘快閃" / "5分鐘正常" / "10分鐘最久") ----
+  const plan = room?.sessionPlan;
+  const nextEntry = plan?.entries[1];
+  const nextGame = GAMES.find((g) => g.id === nextEntry?.gameId);
+  const sessionActive = Boolean(plan && plan.entries.length > 0);
+
+  // Remember what got played so the next draw can avoid it ("盡量不重複").
+  const gameId = room?.gameId;
+  useEffect(() => {
+    if (gameId) rememberPlayedGame(gameId);
+  }, [gameId]);
+
+  const handleAdvance = useCallback(async () => {
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+    setAdvancing(true);
+    try {
+      await advanceSession();
+      // The room drops back to LOBBY; this page redirects to the host screen.
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "無法前往下一款");
+      setAutoCountdown(null);
+    } finally {
+      advancingRef.current = false;
+      setAdvancing(false);
+    }
+  }, [advanceSession]);
+
+  // Auto-roll through the playlist, with a pause for anyone still reading scores.
+  useEffect(() => {
+    if (!isHost || !nextEntry || autoCountdown === null || advancing) return;
+    if (autoCountdown <= 0) {
+      void handleAdvance();
+      return;
+    }
+    const timer = setTimeout(() => setAutoCountdown((seconds) => (seconds === null ? null : seconds - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [advancing, autoCountdown, handleAdvance, isHost, nextEntry]);
+
+  const handleDrawSession = async () => {
+    setDrawing(true);
+    setError("");
+    try {
+      // Seat the draw to the phones that actually played this match.
+      const players = room ? Math.max(2, participantIds(room).length) : 4;
+      const playlist = buildPlaylist({
+        mode: sessionMode,
+        playerCount: players,
+        history: loadPlayHistory(),
+      });
+      if (!playlist.entries.length) throw new Error("人數或時間找不到合適的遊戲，換個模式再試");
+      setShowSessionModal(false);
+      await startSession(toSessionPlan(playlist));
+      // Room returns to LOBBY with the next game loaded; this page redirects.
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "抽選失敗，請再試一次");
+    } finally {
+      setDrawing(false);
+    }
+  };
 
   const handleEnd = async () => {
     try {
@@ -372,8 +446,92 @@ export default function ResultsClient({ roomCode }: Props) {
 
         <ErrorNote className="mb-4">{error}</ErrorNote>
 
+        {/* Randomized party session: the drawn playlist and the roll into the next game. */}
+        {plan && (
+          <section className="mb-6" aria-labelledby="session-heading">
+            <h2 id="session-heading" className="sr-only">
+              隨機時段進度
+            </h2>
+            <SessionPlanPanel plan={plan} showSettings />
+            {isHost ? (
+              nextEntry ? (
+                <div className="mt-3 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 p-4">
+                  <p className="mb-1 flex items-center gap-2 text-sm font-bold text-white">
+                    <span aria-hidden="true">{nextGame?.icon ?? "🎲"}</span>
+                    下一款：{nextGame?.name ?? nextEntry.gameId}
+                    <span className="rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-semibold text-white/70 tabular-nums">
+                      約 {nextEntry.minutes} 分
+                    </span>
+                  </p>
+                  <p className="mb-3 text-xs leading-relaxed text-cyan-100/80" role="status">
+                    {autoCountdown === null
+                      ? "自動前往已暫停，準備好再按下方按鈕。"
+                      : `看完分數就出發 · ${autoCountdown} 秒後自動回到大廳`}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="accent"
+                      size="md"
+                      className="flex-1 font-bold"
+                      loading={advancing}
+                      onClick={() => void handleAdvance()}
+                    >
+                      <Play className="h-4 w-4" aria-hidden="true" /> 立刻前往下一款
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="md"
+                      onClick={() => setAutoCountdown((seconds) => (seconds === null ? AUTO_ADVANCE_SECONDS : null))}
+                    >
+                      {autoCountdown === null ? (
+                        <>
+                          <Timer className="h-4 w-4" aria-hidden="true" /> 恢復自動
+                        </>
+                      ) : (
+                        <>
+                          <Pause className="h-4 w-4" aria-hidden="true" /> 先停一下
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 rounded-2xl border border-yellow-400/30 bg-yellow-500/10 p-4">
+                  <p className="mb-1 text-sm font-bold text-yellow-100">
+                    🎉 這個時段的 {plan.played.length} 款遊戲都玩完了！
+                  </p>
+                  <p className="mb-3 text-xs leading-relaxed text-yellow-100/80">
+                    玩過的：{plan.played.map((id) => GAMES.find((g) => g.id === id)?.name ?? id).join("、")}
+                  </p>
+                  <Button
+                    variant="accent"
+                    size="md"
+                    className="w-full font-bold"
+                    onClick={() => {
+                      setSessionMode(plan.mode);
+                      setShowSessionModal(true);
+                    }}
+                  >
+                    <Dices className="h-4 w-4" aria-hidden="true" /> 再抽一個時段
+                  </Button>
+                </div>
+              )
+            ) : (
+              <p className="mt-3 text-center text-sm text-white/60" role="status">
+                {nextEntry
+                  ? `房主即將開始下一款：${nextGame?.icon ?? "🎲"} ${nextGame?.name ?? ""}`
+                  : "這個隨機時段結束了，等房主決定下一步…"}
+              </p>
+            )}
+          </section>
+        )}
+
         {/* Next-game straw poll — host still decides, but sees the room's mood. */}
-        <section className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4" aria-labelledby="next-game-heading">
+        <section
+          hidden={sessionActive}
+          className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4"
+          aria-labelledby="next-game-heading"
+        >
           <h2 id="next-game-heading" className="mb-1 text-sm font-semibold text-white/85">
             下一局想玩什麼？
           </h2>
@@ -431,7 +589,7 @@ export default function ResultsClient({ roomCode }: Props) {
                 <RotateCcw className="h-4 w-4" aria-hidden="true" /> 再玩一次（回大廳）
               </Button>
 
-              {topVoted && (
+              {topVoted && !sessionActive && (
                 <Button
                   variant="ghost"
                   size="md"
@@ -450,6 +608,16 @@ export default function ResultsClient({ roomCode }: Props) {
                 onClick={() => setShowSwitchModal(true)}
               >
                 <Gamepad2 className="h-4 w-4" aria-hidden="true" /> 換一款遊戲（免重新掃碼）
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="md"
+                className="w-full border border-cyan-400/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
+                onClick={() => setShowSessionModal(true)}
+              >
+                <Dices className="h-4 w-4" aria-hidden="true" />
+                {sessionActive ? "重抽隨機時段" : "🎲 抽一個隨機時段"}
               </Button>
 
               <Button variant="danger" size="md" className="w-full" onClick={() => setConfirmingEnd(true)}>
@@ -471,6 +639,36 @@ export default function ResultsClient({ roomCode }: Props) {
           )}
         </div>
       </div>
+
+      {/* Randomized session draw */}
+      <Modal
+        open={showSessionModal}
+        onClose={() => setShowSessionModal(false)}
+        title="抽一個隨機時段"
+      >
+        <p className="mb-4 text-xs leading-relaxed text-white/55">
+          選一段時間，系統會抽出塞得進去的遊戲清單（同一個時段不重複），並把回合數與秒數調成剛好的建議值。
+          抽完直接從第一款開始，玩完自動接下一款。
+        </p>
+        <PlayModePicker value={sessionMode} onChange={(next) => setSessionMode(next.id)} />
+        <div className="mt-5 flex gap-2">
+          <Button variant="ghost" size="md" className="flex-1" onClick={() => setShowSessionModal(false)}>
+            取消
+          </Button>
+          <Button
+            variant="accent"
+            size="md"
+            className="flex-1 font-bold"
+            loading={drawing}
+            onClick={() => void handleDrawSession()}
+          >
+            <Dices className="h-4 w-4" aria-hidden="true" /> 開始抽
+          </Button>
+        </div>
+        <p className="mt-3 text-[11px] leading-relaxed text-white/40">
+          會優先避開這台裝置最近玩過的遊戲{sessionActive ? "；抽新的時段會取代目前這份清單" : ""}。
+        </p>
+      </Modal>
 
       {/* Switch Game Modal */}
       <Modal open={showSwitchModal} onClose={() => setShowSwitchModal(false)} title="換一款遊戲繼續同樂">
