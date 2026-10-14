@@ -5,10 +5,29 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Clock, Copy, Crown, Link2, Power, Settings, Share2, Sparkles, Users, X } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  Copy,
+  Crown,
+  Dices,
+  Link2,
+  Power,
+  Settings,
+  Share2,
+  SkipForward,
+  Sparkles,
+  Users,
+  X,
+} from "lucide-react";
 import { useRoom } from "@/providers/RoomContext";
 import { GAMES } from "@/constants/games";
-import type { Player } from "@/types";
+import { playModeById } from "@/constants/playModes";
+import type { PlayModeId, Player } from "@/types";
+import { buildPlaylist, toSessionPlan } from "@/lib/playlist";
+import { loadPlayHistory } from "@/lib/playHistory";
+import { PlayModePicker } from "@/components/game/PlayModePicker";
+import { SessionPlanPanel } from "@/components/game/SessionPlanPanel";
 import { Button } from "@/components/ui/Button";
 import { ErrorNote } from "@/components/ui/ErrorNote";
 import { Modal } from "@/components/ui/Modal";
@@ -23,7 +42,8 @@ import { RoomSettingsFields } from "@/components/game/RoomSettingsFields";
 
 export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
   const router = useRouter();
-  const { room, startGame, kickPlayer, endRoom, updateSettings, isLocalMode, isHost } = useRoom();
+  const { room, startGame, kickPlayer, endRoom, updateSettings, isLocalMode, isHost, startSession, advanceSession } =
+    useRoom();
 
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -34,6 +54,14 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(false);
   const [confirmStart, setConfirmStart] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [sessionMode, setSessionMode] = useState<PlayModeId>("standard");
+  const [drawingSession, setDrawingSession] = useState(false);
+  const [skipping, setSkipping] = useState(false);
+  const plan = room?.sessionPlan;
+  const sessionPreset = plan ? playModeById(plan.mode) : null;
+  const nextEntry = plan?.entries[1];
+  const nextGame = GAMES.find((g) => g.id === nextEntry?.gameId);
 
   useEffect(() => setOrigin(window.location.origin), []);
   const joinUrl = origin ? `${origin}/join/${roomCode}` : "";
@@ -89,6 +117,39 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : "無法結束房間");
       setConfirmingEnd(false);
+    }
+  };
+
+  /** Draw a playlist for the chosen time box and load its first game. */
+  const handleDrawSession = async () => {
+    setDrawingSession(true);
+    setError("");
+    try {
+      const playlist = buildPlaylist({
+        mode: sessionMode,
+        playerCount: Math.max(2, onlineCount),
+        history: loadPlayHistory(),
+      });
+      if (!playlist.entries.length) throw new Error("這個人數與時間找不到合適的遊戲，換個模式再試");
+      setShowSessionModal(false);
+      await startSession(toSessionPlan(playlist));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "抽選失敗，請再試一次");
+    } finally {
+      setDrawingSession(false);
+    }
+  };
+
+  /** Skip the game in the lobby and load the next one from the playlist. */
+  const handleSkipSession = async () => {
+    setSkipping(true);
+    setError("");
+    try {
+      await advanceSession();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "無法跳到下一款");
+    } finally {
+      setSkipping(false);
     }
   };
 
@@ -214,6 +275,41 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
               </div>
             </div>
           </section>
+        )}
+
+        {/* Random party session: what the draw picked for this room. */}
+        {plan ? (
+          <div className="mb-6">
+            <SessionPlanPanel plan={plan} showSettings />
+            <div className="mt-2 flex flex-wrap gap-2">
+              {nextEntry && (
+                <Button variant="ghost" size="sm" loading={skipping} onClick={() => void handleSkipSession()}>
+                  <SkipForward className="h-3.5 w-3.5" aria-hidden="true" /> 跳過這款，先玩 {nextGame?.name}
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowSessionModal(true)}>
+                <Dices className="h-3.5 w-3.5" aria-hidden="true" /> 重抽時段
+              </Button>
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+              建議設定只是建議：按下方「設定」可以自由調整秒數與回合數。想改回自己挑遊戲，直接從結算畫面換一款即可。
+            </p>
+          </div>
+        ) : (
+          isHost && (
+            <section className="mb-6 rounded-2xl border border-cyan-400/25 bg-cyan-500/10 p-4" aria-label="隨機時段派對">
+              <p className="mb-1 flex items-center gap-2 text-sm font-bold text-cyan-100">
+                <Dices className="h-4 w-4" aria-hidden="true" /> 不知道玩什麼？抽一個隨機時段
+              </p>
+              <p className="mb-3 text-xs leading-relaxed text-cyan-100/75">
+                選 3 / 5 / 10 分鐘，系統隨機抽出塞得進這段時間的遊戲清單，並盡量避開最近玩過的遊戲。
+                玩完一款自動接下一款，全場都不用重新掃碼。
+              </p>
+              <Button variant="accent" size="md" className="font-bold" onClick={() => setShowSessionModal(true)}>
+                <Dices className="h-4 w-4" aria-hidden="true" /> 抽一個時段
+              </Button>
+            </section>
+          )
         )}
 
         {/* Player List */}
@@ -395,6 +491,33 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
             </Button>
           </>
         )}
+      </Modal>
+
+      {/* Random session draw */}
+      <Modal open={showSessionModal} onClose={() => setShowSessionModal(false)} title="抽一個隨機時段">
+        <p className="mb-4 text-xs leading-relaxed text-white/55">
+          目前有 {onlineCount} 位手機玩家，只會抽他們玩得起的遊戲。抽完會直接換到第一款的大廳。
+        </p>
+        <PlayModePicker value={sessionMode} onChange={(next) => setSessionMode(next.id)} />
+        <div className="mt-5 flex gap-2">
+          <Button variant="ghost" size="md" className="flex-1" onClick={() => setShowSessionModal(false)}>
+            取消
+          </Button>
+          <Button
+            variant="accent"
+            size="md"
+            className="flex-1 font-bold"
+            loading={drawingSession}
+            onClick={() => void handleDrawSession()}
+          >
+            <Dices className="h-4 w-4" aria-hidden="true" /> 開始抽
+          </Button>
+        </div>
+        <p className="mt-3 text-[11px] leading-relaxed text-white/40">
+          {plan
+            ? `抽新的時段會取代目前這份「${sessionPreset?.label ?? ""}」清單。`
+            : "抽到的建議設定會先套用，但按「設定」仍可自由調整。"}
+        </p>
       </Modal>
 
       <Modal open={confirmStart} onClose={() => setConfirmStart(false)} title="仍有玩家未就緒" role="alertdialog">

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ConnectionBadge } from "@/components/game/ConnectionBadge";
 import { FloatingReactions } from "@/components/game/FloatingReactions";
+import { SessionPlanPanel } from "@/components/game/SessionPlanPanel";
 import { vibrate } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +87,9 @@ export default function PlayClient({ roomCode }: Props) {
             <p className="text-xs text-white/60 line-clamp-2">{game.description}</p>
           </div>
         )}
+
+        {/* Random session: what is queued behind this game */}
+        {room?.sessionPlan && <SessionPlanPanel plan={room.sessionPlan} className="mb-4" />}
 
         {/* Player Identity Card */}
         {player && (

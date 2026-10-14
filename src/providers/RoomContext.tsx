@@ -13,7 +13,7 @@ import {
   update,
 } from "firebase/database";
 import { onAuthStateChanged, signInAnonymously, type User } from "firebase/auth";
-import type { Player, ReactionItem, Room, RoomSettings } from "@/types";
+import type { Player, ReactionItem, Room, RoomSessionPlan, RoomSettings } from "@/types";
 import { GAMES } from "@/constants/games";
 import { NICKNAME_KEY, ROOM_TTL_MS, SESSION_KEY } from "@/constants/room";
 import { db, auth as authInstance } from "@/lib/firebase";
@@ -40,13 +40,16 @@ import { parseRoom } from "@/lib/roomData";
 import { normalizeSettings } from "@/constants/gameSettings";
 import {
   advanceRoomGame,
+  advanceRoomSession,
   applyRoomAction,
   actionContextKey,
   claimRoomHost,
   endRoomGame,
+  leaveRoomSession,
   restartRoomGame,
   returnRoomToLobby,
   startRoomGame,
+  startRoomSession,
 } from "@/lib/gameSession";
 import { isParticipant } from "@/engine/participants";
 import { setServerOffset } from "@/engine/clock";
@@ -82,7 +85,12 @@ interface RoomContextValue {
   isHost: boolean;
   isLocalMode: boolean;
   connectionStatus: ConnectionStatus;
-  createRoom: (gameId: string, nickname: string, settings?: RoomSettings) => Promise<string>;
+  createRoom: (
+    gameId: string,
+    nickname: string,
+    settings?: RoomSettings,
+    sessionPlan?: RoomSessionPlan,
+  ) => Promise<string>;
   joinRoom: (roomCode: string, nickname: string) => Promise<void>;
   leaveRoom: () => Promise<void>;
   endRoom: () => Promise<void>;
@@ -93,6 +101,10 @@ interface RoomContextValue {
   rematch: () => Promise<void>;
   endGame: () => Promise<void>;
   switchGame: (newGameId: string) => Promise<void>;
+  /** Start a drawn randomized session ("3分鐘快閃" / "5分鐘正常" / "10分鐘最久"). */
+  startSession: (plan: RoomSessionPlan) => Promise<void>;
+  /** Finish the current session game and load the next one. Null once the session is over. */
+  advanceSession: () => Promise<RoomSessionPlan | null>;
   updateSettings: (patch: Partial<RoomSettings>) => Promise<void>;
   submitAction: (action: unknown) => Promise<void>;
   /** RESULTS screen: vote which game to play next (host still decides). */
@@ -498,7 +510,12 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createRoom = useCallback(
-    async (gameId: string, rawNickname: string, settings?: RoomSettings): Promise<string> => {
+    async (
+      gameId: string,
+      rawNickname: string,
+      settings?: RoomSettings,
+      sessionPlan?: RoomSessionPlan,
+    ): Promise<string> => {
       const game = GAMES.find((g) => g.id === gameId);
       if (!game) throw new Error("找不到這個遊戲");
       if (!getGameEngine(gameId)) throw new Error(`${game.name} 尚未開放，敬請期待`);
@@ -534,11 +551,12 @@ export function RoomProvider({ children }: { children: ReactNode }) {
               settings: baseSettings,
               players: { [authUser.uid]: hostPlayer },
               gameState: {},
+              ...(sessionPlan ? { sessionPlan } : {}),
             };
             const result = await withTimeout(
               runTransaction(ref(db, `rooms/${candidate}`), (current) => {
                 if (current !== null) return undefined; // code already taken
-                return createdRoom as unknown as Record<string, unknown>;
+                return stripUndefined(createdRoom) as unknown as Record<string, unknown>;
               }),
               7000,
               "Firebase 房間建立連線逾時",
@@ -596,6 +614,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         settings: baseSettings,
         players: { [authUser.uid]: hostPlayer },
         gameState: {},
+        ...(sessionPlan ? { sessionPlan } : {}),
       };
       if (!saveLocalRoom(newRoom))
         throw new Error("這個瀏覽器的儲存空間不足，房間無法建立。請關閉其他分頁或清除網站資料後再試一次。");
@@ -810,12 +829,36 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   const switchGame = useCallback(
     (gameId: string) =>
       mutateHostRoom((current) => {
-        const next = returnRoomToLobby(current, gameId);
+        const next = leaveRoomSession(returnRoomToLobby(current, gameId), gameId);
         const { nextGameVotes: _votes, ...rest } = next as Room & { nextGameVotes?: Record<string, string> };
         return rest;
       }),
     [mutateHostRoom],
   );
+
+  const startSession = useCallback(
+    (plan: RoomSessionPlan) =>
+      mutateHostRoom((current) => {
+        if (current.status === "PLAYING") throw new Error("遊戲進行中不能切換時段");
+        const next = startRoomSession(current, plan, Date.now() + serverOffset.current);
+        const { nextGameVotes: _votes, ...rest } = next as Room & { nextGameVotes?: Record<string, string> };
+        return rest;
+      }),
+    [mutateHostRoom],
+  );
+
+  const advanceSession = useCallback(async (): Promise<RoomSessionPlan | null> => {
+    const box: { plan: RoomSessionPlan | null } = { plan: null };
+    await mutateHostRoom((room) => {
+      if (room.status === "PLAYING") throw new Error("遊戲進行中不能換場");
+      const next = advanceRoomSession(room, Date.now() + serverOffset.current);
+      if (!next) throw new Error("這個房間沒有進行中的隨機時段");
+      box.plan = next.sessionPlan ?? null;
+      return next;
+    });
+    // An empty plan means the last game just wrapped up: the session is over.
+    return box.plan && box.plan.entries.length > 0 ? box.plan : null;
+  }, [mutateHostRoom]);
 
   const voteNextGame = useCallback(
     async (gameId: string) => {
@@ -1000,6 +1043,8 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         rematch,
         endGame,
         switchGame,
+        startSession,
+        advanceSession,
         updateSettings,
         submitAction,
         voteNextGame,

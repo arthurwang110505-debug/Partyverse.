@@ -35,11 +35,23 @@ See [docs/firebase-rules.md](docs/firebase-rules.md) for what they allow, how to
 
 > Do **not** open the database to public read/write to “fix” join. If phones still get `PERMISSION_DENIED`, read [跨裝置加入修正與部署排錯](docs/firebase-join-fix.md) and confirm the deployed rules match the JSON in this repo.
 
+## 隨機時段派對（3分鐘快閃 / 5分鐘正常 / 10分鐘最久）
+
+不想挑遊戲時，選一個時間長度就好：系統會隨機抽出**塞得進這段時間**的遊戲清單，
+每款附上「玩得完」的建議設定（大廳仍可自由調整），並盡量避開這台裝置最近玩過的遊戲。
+每款玩完，結算畫面會自動接下一款，全場不用重新掃碼。
+
+- 入口：首頁「隨機時段」、`/random`、`/create` 的模式卡、大廳與結算畫面的「抽一個隨機時段」
+- 抽選邏輯：`src/lib/playlist.ts`；玩過什麼：`src/lib/playHistory.ts`
+- 詳細說明：[docs/play-modes.md](docs/play-modes.md)
+
 ## Gameplay/mobile implementation update
 
 See [the first-pass implementation and verification notes](docs/gameplay-implementation.md).
 
-Latest: [2026-09-24 room re-entry fix](docs/room-reentry-fix.md) — creating a second room on the same device no longer dropped the host from the big-screen view into `/join/<code>` (the create and room segments mount different providers, and the room gate treated "still opening this room" as "not a member").
+Latest: [2026-10-14 隨機時段派對](docs/play-modes.md) — three time-boxed draw modes (3/5/10 minutes) that pick a non-repeating playlist inside the budget, carry suggested settings into the room, and roll game to game from the results screen.
+
+Previous: [2026-09-24 room re-entry fix](docs/room-reentry-fix.md) — creating a second room on the same device no longer dropped the host from the big-screen view into `/join/<code>` (the create and room segments mount different providers, and the room gate treated "still opening this room" as "not a member").
 
 Previous: [2026-09-23 gameplay foundation](docs/gameplay-foundation.md) — all 15 games now have readiness-based briefings and in-game rules reminders; Poker and Word Chain have fairness/pacing fixes. Includes verification results and the remaining roadmap.
 

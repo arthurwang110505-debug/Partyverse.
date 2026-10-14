@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 // One action per destination, shared by both layouts.
 const LINKS = [
   { href: "/games", label: "遊戲", className: "border-cyan-400/30 bg-cyan-500/10 text-cyan-200" },
+  { href: "/random", label: "隨機時段", className: "border-violet-400/40 bg-violet-500/15 text-violet-200" },
   { href: "/join", label: "加入房間", className: "border-rose-400/40 bg-rose-500/15 text-rose-200" },
 ];
 

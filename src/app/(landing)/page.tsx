@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, Monitor, QrCode, Radio, Smartphone, Sparkles, Terminal, Users, Zap } from "lucide-react";
+import { ArrowRight, Dices, Monitor, QrCode, Radio, Smartphone, Sparkles, Terminal, Users, Zap } from "lucide-react";
 import { GAMES } from "@/constants/games";
+import { PLAY_MODES } from "@/constants/playModes";
 import { playableGameIds } from "@/engine";
 import GameCard from "@/components/GameCard";
 import Navbar from "@/components/Navbar";
@@ -134,6 +135,20 @@ export default function Home() {
               <Monitor className="h-5 w-5 text-cyan-300 group-hover:text-black transition-colors" />
               <span className="tracking-wider">挑選遊戲開房</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+
+            {/* Random time-box Button */}
+            <Link
+              href="/random"
+              className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl border-2 border-violet-400 bg-violet-950/70 px-4 py-4 font-mono font-black sm:px-8 text-white shadow-[0_0_25px_rgba(168,85,247,0.4),inset_0_0_15px_rgba(168,85,247,0.2)] transition-all duration-200 hover:scale-105 hover:bg-violet-500 hover:text-black hover:shadow-[0_0_40px_rgba(168,85,247,0.8)] active:scale-95 sm:w-auto"
+            >
+              {/* Corner tech notches */}
+              <span className="absolute top-0 left-0 h-2 w-2 border-t-2 border-l-2 border-white" />
+              <span className="absolute bottom-0 right-0 h-2 w-2 border-b-2 border-r-2 border-white" />
+
+              <Dices className="h-5 w-5 text-violet-300 group-hover:text-black transition-colors" />
+              <span className="tracking-wider">隨機時段</span>
+              <Zap className="h-4 w-4 text-cyan-300 transition-transform group-hover:rotate-12" />
             </Link>
 
             {/* Neon Pink Cyber Button */}
@@ -277,6 +292,61 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* RANDOM TIME-BOX MODES */}
+      <section className="relative px-4 py-16 sm:py-20 border-t border-violet-500/20 bg-[#050718]/70">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <span className="font-mono inline-block rounded-full border border-violet-400/40 bg-violet-950/40 px-4 py-1 text-xs font-bold uppercase tracking-wider text-violet-300 mb-3 shadow-[0_0_10px_rgba(168,85,247,0.2)]">
+              {"//"} TIMEBOX_MODES
+            </span>
+            <h2 className="text-3xl font-black md:text-5xl text-white">時間有多少，就玩多少</h2>
+            <p className="mx-auto mt-3 max-w-2xl font-mono text-sm leading-relaxed text-cyan-100/60">
+              不用挑遊戲。選一個長度，系統隨機抽出剛好塞得滿的遊戲清單，
+              盡量避開你們剛玩過的遊戲；玩完一款，大螢幕按一下自動接下一款。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            {PLAY_MODES.map((mode) => (
+              <Link
+                key={mode.id}
+                href={`/random?mode=${mode.id}`}
+                className="group relative overflow-hidden rounded-3xl border-2 p-6 transition-all hover:-translate-y-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                style={{ borderColor: `${mode.color}55`, background: "rgba(0,0,0,0.45)" }}
+              >
+                <span
+                  className="pointer-events-none absolute inset-x-0 -top-20 h-32 opacity-30 blur-3xl transition-opacity group-hover:opacity-50"
+                  style={{ background: mode.gradient }}
+                  aria-hidden="true"
+                />
+                <span className="relative block text-4xl" aria-hidden="true">
+                  {mode.icon}
+                </span>
+                <span className="relative mt-4 block font-mono text-xl font-black text-white">{mode.label}</span>
+                <span className="relative mt-1 block font-mono text-xs text-white/50">{mode.tagline}</span>
+                <span className="relative mt-4 flex flex-wrap gap-1.5 font-mono text-[10px] text-white/45">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5">
+                    上限 {mode.budgetMinutes} 分鐘
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5">同一時段不重複</span>
+                </span>
+                <span
+                  className="relative mt-5 inline-flex items-center gap-1.5 font-mono text-xs font-bold"
+                  style={{ color: mode.color }}
+                >
+                  抽一段來玩
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                </span>
+              </Link>
+            ))}
+          </div>
+
+          <p className="mt-8 text-center font-mono text-xs text-white/40">
+            抽到的遊戲會自動套用「玩得完」的回合數與秒數建議，房主在大廳仍可自由調整。
+          </p>
         </div>
       </section>
 

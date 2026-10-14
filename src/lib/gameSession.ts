@@ -1,4 +1,4 @@
-import type { Room } from "@/types";
+import type { Room, RoomSessionPlan } from "@/types";
 import { HOST_STALE_MS } from "@/constants/room";
 import { GAMES } from "@/constants/games";
 import { normalizeSettings } from "@/constants/gameSettings";
@@ -215,6 +215,57 @@ export function returnRoomToLobby(room: Room, gameId = room.gameId): Room {
 
 export function restartRoomGame(room: Room, now = Date.now()): Room {
   return startRoomGame(returnRoomToLobby(room), now);
+}
+
+/**
+ * Load a freshly drawn random-playlist session into the room.
+ *
+ * The first entry becomes the room's game, carrying its suggested settings —
+ * suggestions only, so the lobby can still edit them before the host starts.
+ */
+export function startRoomSession(room: Room, plan: RoomSessionPlan, now = Date.now()): Room {
+  const entry = plan.entries[0];
+  if (!entry) throw new Error("這個時段沒有排到遊戲，請重新抽一次");
+  if (!getGameEngine(entry.gameId)) throw new Error("找不到這個遊戲");
+  const lobby = returnRoomToLobby(room, entry.gameId);
+  return {
+    ...lobby,
+    settings: normalizeSettings(entry.gameId, entry.settings),
+    sessionPlan: { ...plan, startedAt: plan.startedAt || now },
+  };
+}
+
+/**
+ * Finish the session's current game and promote the next entry.
+ *
+ * Returns `null` when the room has no session at all; when the last game is
+ * done it keeps the room on RESULTS and stamps `completedAt` instead, so the
+ * host screen can present the session summary.
+ */
+export function advanceRoomSession(room: Room, now = Date.now()): Room | null {
+  const plan = room.sessionPlan;
+  if (!plan || !plan.entries.length) return null;
+  const [current, ...rest] = plan.entries;
+  const played = plan.played.includes(current.gameId) ? plan.played : [...plan.played, current.gameId];
+  if (!rest.length) {
+    return { ...room, sessionPlan: { ...plan, entries: [], played, completedAt: now } };
+  }
+  const next = rest[0];
+  if (!getGameEngine(next.gameId)) throw new Error("找不到下一款遊戲");
+  const lobby = returnRoomToLobby(room, next.gameId);
+  return {
+    ...lobby,
+    settings: normalizeSettings(next.gameId, next.settings),
+    sessionPlan: { ...plan, entries: rest, played },
+  };
+}
+
+/** A manual game switch leaves a running session behind. */
+export function leaveRoomSession(room: Room, gameId: string): Room {
+  const plan = room.sessionPlan;
+  if (!plan || plan.entries[0]?.gameId === gameId) return room;
+  const { sessionPlan: _dropped, ...rest } = room;
+  return rest;
 }
 
 export function endRoomGame(room: Room, now = Date.now()): Room {

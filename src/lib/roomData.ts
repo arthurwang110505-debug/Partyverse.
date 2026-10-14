@@ -1,6 +1,45 @@
-import type { Player, ReactionItem, Room, RoomSettings } from "@/types";
+import type { Player, ReactionItem, Room, RoomSessionEntry, RoomSessionPlan, RoomSettings } from "@/types";
 import { normalizeSettings } from "@/constants/gameSettings";
+import { isPlayModeId } from "@/constants/playModes";
 import { arrayValue, normalizeGameState } from "@/engine/state";
+
+/**
+ * Rebuild a randomized party session from storage, dropping anything invalid.
+ *
+ * RTDB deletes empty arrays, so a completed session (`entries: []`) or a
+ * half-written playlist must still parse into something the UI can render.
+ */
+function parseSessionPlan(raw: unknown): RoomSessionPlan | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const data = raw as Record<string, unknown>;
+  const mode = data.mode;
+  if (!isPlayModeId(mode)) return undefined;
+  const entries: RoomSessionEntry[] = arrayValue(data.entries)
+    .map((value): RoomSessionEntry | null => {
+      if (!value || typeof value !== "object") return null;
+      const entry = value as Partial<RoomSessionEntry>;
+      if (typeof entry.gameId !== "string" || !entry.gameId) return null;
+      const minutes = Number(entry.minutes);
+      return {
+        gameId: entry.gameId,
+        minutes: Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 1,
+        settings: normalizeSettings(entry.gameId, (entry.settings as Partial<RoomSettings>) ?? {}),
+        ...(entry.repeated ? { repeated: true } : {}),
+      };
+    })
+    .filter((entry): entry is RoomSessionEntry => entry !== null);
+  const budgetMinutes = Number(data.budgetMinutes);
+  const startedAt = Number(data.startedAt);
+  const completedAt = Number(data.completedAt);
+  return {
+    mode,
+    budgetMinutes: Number.isFinite(budgetMinutes) && budgetMinutes > 0 ? Math.round(budgetMinutes) : 3,
+    entries,
+    played: arrayValue(data.played).filter((id): id is string => typeof id === "string"),
+    startedAt: Number.isFinite(startedAt) && startedAt > 0 ? startedAt : Date.now(),
+    ...(Number.isFinite(completedAt) && completedAt > 0 ? { completedAt } : {}),
+  };
+}
 
 /** Normalise whatever the database hands back so a half-written room can't crash the UI. */
 export function parseRoom(data: Record<string, unknown> | null, roomCode: string): Room | null {
@@ -65,6 +104,7 @@ export function parseRoom(data: Record<string, unknown> | null, roomCode: string
         ? undefined
         : arrayValue(data.participantIds).filter((id): id is string => typeof id === "string"),
     contentHistory: (data.contentHistory ?? {}) as Room["contentHistory"],
+    sessionPlan: parseSessionPlan(data.sessionPlan),
     nextGameVotes:
       data.nextGameVotes && typeof data.nextGameVotes === "object"
         ? Object.fromEntries(
