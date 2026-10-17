@@ -46,10 +46,15 @@ export function splitSecrets(gameId: string, fullState: Record<string, unknown>)
   const publicState: Record<string, unknown> = { ...fullState };
   const hostSecrets: HostSecrets = {};
 
+  // A secret stops being one once the game reveals it. Without a TV nobody can
+  // read the answer off a shared screen, so the drawing word goes public with the
+  // round's reveal and every phone can show it.
+  const revealed = gameId === "drawandguess" && (fullState.phase === "reveal" || fullState.phase === "result");
+
   for (const key of secretKeys) {
     if (key in publicState) {
       hostSecrets[key] = publicState[key];
-      delete publicState[key];
+      if (!(revealed && key === "prompt")) delete publicState[key];
     }
   }
 
@@ -146,7 +151,7 @@ export function viewGameState(
   // Draw: drawer-only prompt; guessers get category + length only.
   if (isPlainObject(mine.prompt)) {
     view.prompt = mine.prompt;
-  } else if (room.gameId === "drawandguess") {
+  } else if (room.gameId === "drawandguess" && !revealedPrompt(publicState)) {
     view.prompt = {
       id: "",
       word: "",
@@ -174,6 +179,12 @@ export function viewGameState(
   }
 
   return view;
+}
+
+/** The drawing word is only on the public state during a round's reveal. */
+function revealedPrompt(publicState: Record<string, unknown>): boolean {
+  const prompt = publicState.prompt as { word?: unknown } | undefined;
+  return isPlainObject(prompt) && typeof prompt.word === "string" && prompt.word.length > 0;
 }
 
 /** True when this game carries secrets that should be split. */

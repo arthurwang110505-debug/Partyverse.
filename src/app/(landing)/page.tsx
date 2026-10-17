@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Dices, Monitor, QrCode, Radio, Smartphone, Sparkles, Terminal, Users, Zap } from "lucide-react";
+import { ArrowRight, Dices, QrCode, Radio, Smartphone, Sparkles, Terminal, Users, Zap } from "lucide-react";
 import { GAMES } from "@/constants/games";
 import { PLAY_MODES } from "@/constants/playModes";
 import { playableGameIds } from "@/engine";
@@ -84,7 +84,7 @@ export default function Home() {
               <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
               <Terminal className="h-3.5 w-3.5 text-cyan-400" />
               <span>{"//"} READY TO PARTY</span>
-              <span className="hidden text-pink-400 sm:inline">TV + PHONE</span>
+              <span className="hidden text-pink-400 sm:inline">PHONE ONLY · TV OPTIONAL</span>
             </div>
 
             <LedMatrixBlock color="pink" rows={3} cols={6} className="hidden sm:grid" />
@@ -93,11 +93,11 @@ export default function Home() {
           {/* Subtitle Cyber Badge */}
           <div className="mb-6 inline-flex flex-wrap items-center justify-center gap-2 font-mono text-xs">
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/60 bg-cyan-950/60 px-3 py-1 font-bold text-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-              <Monitor className="h-3.5 w-3.5 text-cyan-400" />[ 01_HOST: 客廳大螢幕 ]
+              <Smartphone className="h-3.5 w-3.5 text-cyan-400" />[ 01_HOST: 你的手機 ]
             </span>
             <span className="text-pink-500 font-black animate-pulse">⚡ CROSS-LINK ⚡</span>
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#ff007f]/60 bg-pink-950/60 px-3 py-1 font-bold text-pink-300 shadow-[0_0_15px_rgba(255,0,127,0.3)]">
-              <Smartphone className="h-3.5 w-3.5 text-pink-400" />[ 02_NODE: 手機虛擬手把 ]
+              <Smartphone className="h-3.5 w-3.5 text-pink-400" />[ 02_NODE: 朋友的手機 ]
             </span>
           </div>
 
@@ -116,9 +116,9 @@ export default function Home() {
 
           {/* Cyberpunk Terminal Description */}
           <p className="mx-auto mt-6 mb-10 max-w-2xl font-mono text-sm leading-relaxed text-cyan-100/70 sm:text-base md:text-lg">
-            一間房，16 款遊戲。電視就是舞台，手機就是手把。
+            一間房，16 款遊戲。一支手機就能開局，不用電視、不用投影機。
             <br />
-            免下載、免註冊，揪朋友一起開趴！
+            免下載、免註冊，揪朋友一起開趴！有大螢幕也行，當成舞台投出去就好。
           </p>
 
           {/* CYBERPUNK NEON CALL-TO-ACTION BUTTONS */}
@@ -132,7 +132,7 @@ export default function Home() {
               <span className="absolute top-0 left-0 h-2 w-2 border-t-2 border-l-2 border-white" />
               <span className="absolute bottom-0 right-0 h-2 w-2 border-b-2 border-r-2 border-white" />
 
-              <Monitor className="h-5 w-5 text-cyan-300 group-hover:text-black transition-colors" />
+              <Smartphone className="h-5 w-5 text-cyan-300 group-hover:text-black transition-colors" />
               <span className="tracking-wider">挑選遊戲開房</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
@@ -172,7 +172,7 @@ export default function Home() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3 text-[10px] sm:text-xs font-mono text-white/50">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
-                <span className="text-cyan-300 font-bold">TV + PHONE // 操作示意</span>
+                <span className="text-cyan-300 font-bold">HOST + FRIENDS // 操作示意</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-pink-400">非實際遊戲房間</span>
@@ -189,7 +189,7 @@ export default function Home() {
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff]" />
                     <span className="font-mono text-xs font-black uppercase tracking-wider text-cyan-300">
-                      📺 電視主畫面
+                      📱 主畫面（人人手機皆同步）
                     </span>
                   </div>
                   <span className="rounded bg-cyan-500/20 px-2 py-0.5 font-mono text-[11px] font-bold text-cyan-200 border border-cyan-500/30">
@@ -236,7 +236,7 @@ export default function Home() {
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-[#ff007f] shadow-[0_0_8px_#ff007f]" />
                     <span className="font-mono text-xs font-black uppercase tracking-wider text-pink-300">
-                      📱 手機控制器
+                      📱 朋友的手機
                     </span>
                   </div>
                   <span className="font-mono text-[11px] font-bold text-pink-200">玩家 👾</span>
@@ -305,7 +305,7 @@ export default function Home() {
             <h2 className="text-3xl font-black md:text-5xl text-white">時間有多少，就玩多少</h2>
             <p className="mx-auto mt-3 max-w-2xl font-mono text-sm leading-relaxed text-cyan-100/60">
               不用挑遊戲。選一個長度，系統隨機抽出剛好塞得滿的遊戲清單，
-              盡量避開你們剛玩過的遊戲；玩完一款，大螢幕按一下自動接下一款。
+              盡量避開你們剛玩過的遊戲；玩完一款，房主按一下自動接下一款。
             </p>
           </div>
 
@@ -359,7 +359,7 @@ export default function Home() {
             </span>
             <h2 className="text-3xl font-black md:text-5xl tracking-tight text-white">三步驟，啟動派對核心！</h2>
             <p className="mx-auto mt-3 max-w-md font-mono text-sm text-cyan-100/60">
-              免下載、免帳號註冊，以大螢幕為中樞，手機即終端手把。
+              免下載、免帳號註冊，房主的手機就是中樞，朋友的手機就是手把。
             </p>
           </div>
 
@@ -368,14 +368,14 @@ export default function Home() {
             <div className="relative rounded-3xl border-2 border-cyan-400/40 bg-gradient-to-b from-[#06142a] to-[#040816] p-8 shadow-[0_0_20px_rgba(0,240,255,0.15)] transition-all hover:-translate-y-1 hover:border-cyan-400">
               <LedMatrixBlock color="cyan" rows={2} cols={5} className="absolute top-4 right-4 opacity-40" />
               <span className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-400/40 shadow-[0_0_15px_#00f0ff]">
-                <Monitor className="h-6 w-6" />
+                <Smartphone className="h-6 w-6" />
               </span>
               <span className="font-mono mb-1 block text-xs font-black uppercase tracking-wider text-cyan-400">
                 STAGE_01 // HOST
               </span>
-              <h3 className="mb-3 text-xl font-black text-white">開一間電視房</h3>
+              <h3 className="mb-3 text-xl font-black text-white">用手機開一間房</h3>
               <p className="font-mono text-sm leading-relaxed text-white/60">
-                在客廳電視或電腦大螢幕挑選遊戲，一鍵生成專屬五位數房間代碼與高解析 QR Code。
+                在自己的手機挑遊戲，一鍵生成專屬五位數房間代碼與 QR Code。你可以自己下場玩，也可以專心主持。
               </p>
             </div>
 
@@ -390,7 +390,7 @@ export default function Home() {
               </span>
               <h3 className="mb-3 text-xl font-black text-white">朋友掃碼秒速加入</h3>
               <p className="font-mono text-sm leading-relaxed text-white/60">
-                所有人拿起手機鏡頭掃描電視畫面，輸入暱稱即時連入同一個派對房間，免安裝 App。
+                朋友掃描你手機上的 QR Code（或直接用分享連結、輸入代碼），輸入暱稱就連入同一間房，免安裝 App。
               </p>
             </div>
 
@@ -403,9 +403,9 @@ export default function Home() {
               <span className="font-mono mb-1 block text-xs font-black uppercase tracking-wider text-pink-400">
                 STAGE_03 // BATTLE
               </span>
-              <h3 className="mb-3 text-xl font-black text-white">手機化身手把開戰</h3>
+              <h3 className="mb-3 text-xl font-black text-white">全場同步開戰</h3>
               <p className="font-mono text-sm leading-relaxed text-white/60">
-                大螢幕同步遊戲舞台動畫與音效，手機自動載入按鈕手把、調色盤或投票控制器！
+                每支手機都會同步遊戲畫面與音效，並自動載入按鈕、調色盤或投票控制器；想投到電視也行，一鍵就能。
               </p>
             </div>
           </div>
@@ -531,7 +531,7 @@ export default function Home() {
               READY TO IGNITE THE PARTY?
             </h3>
             <p className="font-mono text-cyan-200/70 max-w-xl mx-auto mb-8 text-sm sm:text-base">
-              現在就打開客廳電視開啟房間，邀請身旁的親朋好友一起同樂對決！
+              現在就用手機開一間房，邀請身旁的親朋好友一起同樂對決！
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 font-mono">
               <Link

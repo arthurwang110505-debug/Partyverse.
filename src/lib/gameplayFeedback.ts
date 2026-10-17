@@ -39,7 +39,7 @@ export function submissionProgress(room: Room, playerId?: string) {
     total: ids.length,
     message:
       playerId && !ids.includes(playerId)
-        ? "本輪觀戰，請看大螢幕"
+        ? "本輪觀戰，請看主畫面"
         : playerId && complete(playerId)
           ? "已收到！等待其他玩家完成"
           : prompt,

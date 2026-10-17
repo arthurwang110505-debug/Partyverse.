@@ -8,6 +8,8 @@ import { ConnectionBadge } from "@/components/game/ConnectionBadge";
 import { FloatingReactions } from "@/components/game/FloatingReactions";
 import { sfx } from "@/lib/sound";
 import { GameplayFeedback } from "./GameplayFeedback";
+import { useEmbeddedStage } from "./StageContext";
+import { HostMenu } from "./HostMenu";
 import { cn } from "@/lib/utils";
 
 interface HostShellProps {
@@ -29,7 +31,8 @@ interface HostShellProps {
  * Game-specific sounds (bomb explosions, join chimes) stay in their views.
  */
 export function HostShell({ children, className, wide = true }: HostShellProps) {
-  const { room } = useRoom();
+  const { room, isHost } = useRoom();
+  const embedded = useEmbeddedStage();
   const game = GAMES.find((g) => g.id === room?.gameId);
 
   // Engines all expose `timeLeft`; the bomb engine calls it `bombTimeLeft`.
@@ -39,21 +42,24 @@ export function HostShell({ children, className, wide = true }: HostShellProps) 
 
   const lastTick = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (timeLeft === undefined || timeLeft === lastTick.current) return;
+    if (embedded || timeLeft === undefined || timeLeft === lastTick.current) return;
     lastTick.current = timeLeft;
     if (timeLeft > 0 && timeLeft <= 5) sfx.playTick(620, 0.05);
-  }, [timeLeft]);
+  }, [embedded, timeLeft]);
 
   const lastPhase = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (phase === undefined) return;
+    if (embedded || phase === undefined) return;
     if (lastPhase.current !== undefined && phase !== lastPhase.current) {
       if (phase === "exploded") sfx.playBoom();
       else if (phase === "result") sfx.playFanfare();
       else if (["reveal", "round_reveal", "ejected"].includes(phase)) sfx.playSuccess();
     }
     lastPhase.current = phase;
-  }, [phase]);
+  }, [embedded, phase]);
+
+  // Mirrored on a phone: the phone's own shell already provides the chrome.
+  if (embedded) return <div className={className}>{children}</div>;
 
   return (
     <main
@@ -86,6 +92,8 @@ export function HostShell({ children, className, wide = true }: HostShellProps) 
         <GameplayFeedback />
         {children}
       </div>
+      {/* A phone that runs the party without playing still needs its host menu. */}
+      {isHost && room && <HostMenu />}
     </main>
   );
 }

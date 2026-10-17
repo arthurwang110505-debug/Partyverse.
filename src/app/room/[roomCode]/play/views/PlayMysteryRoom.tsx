@@ -228,7 +228,7 @@ export default function PlayMysteryRoom() {
             <h3 className="text-xl font-black text-white">
               {state.isUnlocked ? "🎉 成功逃出密室！" : "逃脫失敗！"}
             </h3>
-            <p className="text-xs text-white/50 mt-1">請看大螢幕結算通關名單！</p>
+            <p className="text-xs text-white/50 mt-1">請看主畫面結算通關名單！</p>
           </div>
         )}
       </div>

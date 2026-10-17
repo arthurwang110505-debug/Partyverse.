@@ -11,7 +11,8 @@ import { addRecentRoom } from "@/hooks/useRecentRooms";
 import { GAMES } from "@/constants/games";
 import { MAX_NICKNAME_LENGTH, NICKNAME_KEY } from "@/constants/room";
 import { playModeById } from "@/constants/playModes";
-import type { PlayModeId } from "@/types";
+import type { HostMode, PlayModeId } from "@/types";
+import { HOST_MODE_KEY, isHostMode } from "@/lib/stage";
 import {
   buildPlaylist,
   settingsSummary,
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { ErrorNote } from "@/components/ui/ErrorNote";
 import { PlayModePicker } from "@/components/game/PlayModePicker";
+import { HostModePicker, hostModeNote } from "@/components/game/HostModePicker";
 
 const ROLL_MS = 520;
 
@@ -44,6 +46,8 @@ export default function RandomPartyClient({ initialMode, initialPlayerCount }: P
 
   const [savedNickname, setSavedNickname] = useLocalStorage(NICKNAME_KEY, "");
   const [nickname, setNickname] = useState("");
+  const [storedHostMode, setHostMode] = useLocalStorage<string>(HOST_MODE_KEY, "play");
+  const hostMode: HostMode = isHostMode(storedHostMode) ? storedHostMode : "play";
   const [mode, setMode] = useState<PlayModeId>(initialMode ?? "standard");
   const [playerCount, setPlayerCount] = useState(initialPlayerCount ?? 4);
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
@@ -90,7 +94,7 @@ export default function RandomPartyClient({ initialMode, initialPlayerCount }: P
       const cleanName = sanitizeNickname(effectiveNickname);
       setSavedNickname(cleanName);
       const plan = toSessionPlan(playlist);
-      const roomCode = await createRoom(first.gameId, cleanName, first.settings, plan);
+      const roomCode = await createRoom(first.gameId, cleanName, first.settings, plan, hostMode);
       addRecentRoom({ code: roomCode, nickname: cleanName, role: "host" });
       router.push(`/room/${roomCode}/host`);
     } catch (e) {
@@ -123,7 +127,7 @@ export default function RandomPartyClient({ initialMode, initialPlayerCount }: P
           <h1 className="mb-2 text-3xl font-bold md:text-4xl">時間有多少，就玩多少</h1>
           <p className="text-sm leading-relaxed text-white/45">
             選一個長度，系統會隨機抽出剛好塞得進去的遊戲清單，並盡量避開你們剛玩過的遊戲。
-            玩完一款，房主在大螢幕按一下就能接著下一款，不用重新掃碼。
+            玩完一款，房主按一下就能接著下一款，不用重新掃碼。
           </p>
         </header>
 
@@ -277,7 +281,7 @@ export default function RandomPartyClient({ initialMode, initialPlayerCount }: P
         >
           <h2 className="text-sm font-semibold text-white/80">3. 開房，然後就開始玩</h2>
           <Field
-            label="房主暱稱（顯示在電視上）"
+            label="房主暱稱"
             name="nickname"
             value={effectiveNickname}
             onChange={(e) => setNickname(e.target.value)}
@@ -285,9 +289,11 @@ export default function RandomPartyClient({ initialMode, initialPlayerCount }: P
             maxLength={MAX_NICKNAME_LENGTH}
             autoComplete="nickname"
           />
-          <p className="text-sm leading-relaxed text-white/60">
-            這個裝置是電視主畫面，不占玩家名額。想在遊戲裡得分，請用手機掃碼加入。
-          </p>
+          <div>
+            <p className="mb-2 text-sm font-semibold text-white/80">怎麼主持？</p>
+            <HostModePicker value={hostMode} onChange={setHostMode} disabled={creating} />
+            <p className="mt-2 text-xs leading-relaxed text-white/55">{hostModeNote(hostMode)}</p>
+          </div>
 
           <ErrorNote>{error}</ErrorNote>
 

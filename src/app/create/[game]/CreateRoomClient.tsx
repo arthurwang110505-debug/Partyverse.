@@ -10,7 +10,8 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { addRecentRoom } from "@/hooks/useRecentRooms";
 import { GAMES } from "@/constants/games";
 import { MAX_NICKNAME_LENGTH, NICKNAME_KEY } from "@/constants/room";
-import type { RoomSettings } from "@/types";
+import type { HostMode, RoomSettings } from "@/types";
+import { HOST_MODE_KEY, isHostMode } from "@/lib/stage";
 import { sanitizeNickname } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +19,7 @@ import { Field } from "@/components/ui/Field";
 import { ErrorNote } from "@/components/ui/ErrorNote";
 import { normalizeSettings } from "@/constants/gameSettings";
 import { RoomSettingsFields } from "@/components/game/RoomSettingsFields";
+import { HostModePicker, hostModeNote } from "@/components/game/HostModePicker";
 
 interface Props {
   gameId: string;
@@ -30,6 +32,8 @@ export default function CreateRoomClient({ gameId }: Props) {
 
   const [savedNickname, setSavedNickname] = useLocalStorage(NICKNAME_KEY, "");
   const [nickname, setNickname] = useState("");
+  const [storedHostMode, setHostMode] = useLocalStorage<string>(HOST_MODE_KEY, "play");
+  const hostMode: HostMode = isHostMode(storedHostMode) ? storedHostMode : "play";
   const [settings, setSettings] = useState<RoomSettings>(() => normalizeSettings(gameId));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -49,7 +53,7 @@ export default function CreateRoomClient({ gameId }: Props) {
     try {
       const cleanName = sanitizeNickname(effectiveNickname);
       setSavedNickname(cleanName);
-      const roomCode = await createRoom(game.id, cleanName, settings);
+      const roomCode = await createRoom(game.id, cleanName, settings, undefined, hostMode);
       addRecentRoom({ code: roomCode, nickname: cleanName, role: "host" });
       router.push(`/room/${roomCode}/host`);
     } catch (e) {
@@ -92,7 +96,7 @@ export default function CreateRoomClient({ gameId }: Props) {
           }}
         >
           <Field
-            label="房主暱稱（顯示在電視上）"
+            label="房主暱稱"
             name="nickname"
             value={effectiveNickname}
             onChange={(e) => setNickname(e.target.value)}
@@ -102,9 +106,11 @@ export default function CreateRoomClient({ gameId }: Props) {
             autoFocus
           />
 
-          <p className="text-sm leading-relaxed text-white/65">
-            此裝置作為電視主畫面，不占玩家名額。房主想參賽，也請用手機掃碼加入。
-          </p>
+          <div>
+            <p className="mb-2 text-sm font-semibold text-white/80">怎麼主持？</p>
+            <HostModePicker value={hostMode} onChange={setHostMode} disabled={submitting} />
+            <p className="mt-2 text-xs leading-relaxed text-white/55">{hostModeNote(hostMode)}</p>
+          </div>
           <RoomSettingsFields
             gameId={gameId}
             settings={settings}

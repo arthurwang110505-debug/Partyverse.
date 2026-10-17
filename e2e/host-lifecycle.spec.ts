@@ -20,7 +20,8 @@ test("a host can create a room again after closing the first one", async ({ page
     await page.goto("/games/everybodyknows");
     await page.getByRole("link", { name: "建立房間", exact: true }).click();
     await page.waitForURL(/\/create\/everybodyknows$/);
-    await page.getByLabel("房主暱稱（顯示在電視上）").fill("客廳電視");
+    await page.getByRole("radio", { name: /有大螢幕/ }).click();
+    await page.getByLabel("房主暱稱").fill("客廳電視");
     await page.getByRole("button", { name: "建立房間", exact: true }).click();
     await page.waitForURL(/\/room\/[^/]+\/host$/);
     const code = page.url().split("/").at(-2)!;

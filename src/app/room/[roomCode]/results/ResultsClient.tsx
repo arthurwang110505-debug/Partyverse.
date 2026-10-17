@@ -13,6 +13,7 @@ import { SessionPlanPanel } from "@/components/game/SessionPlanPanel";
 import type { Achievement, PlayModeId } from "@/types";
 import type { BombGameState } from "@/engine/bombCountdown";
 import { Button, LinkButton } from "@/components/ui/Button";
+import { ResultReveal } from "@/components/game/ResultReveal";
 import { ErrorNote } from "@/components/ui/ErrorNote";
 import { Modal } from "@/components/ui/Modal";
 import { Confetti } from "@/components/game/Confetti";
@@ -252,6 +253,8 @@ export default function ResultsClient({ roomCode }: Props) {
             </p>
           )}
         </header>
+
+        <ResultReveal room={room} />
 
         {ranked.length > 0 && (
           <section className="mb-6 grid grid-cols-4 gap-2" aria-label="本局回顧">

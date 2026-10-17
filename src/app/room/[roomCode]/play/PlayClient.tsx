@@ -7,6 +7,7 @@ import { useToast } from "@/providers/ToastProvider";
 import { isParticipant } from "@/engine/participants";
 import { useRoom } from "@/providers/RoomContext";
 import { GAMES } from "@/constants/games";
+import { usesBigScreen } from "@/lib/stage";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ConnectionBadge } from "@/components/game/ConnectionBadge";
@@ -29,7 +30,10 @@ export default function PlayClient({ roomCode }: Props) {
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   const game = GAMES.find((g) => g.id === room?.gameId);
-  const playerList = Object.values(room?.players ?? {}).filter(isParticipant);
+  const bigScreen = usesBigScreen(room);
+  const playerList = Object.values(room?.players ?? {})
+    .filter(isParticipant)
+    .sort((a, b) => (a.isHost === b.isHost ? (a.nickname || "").localeCompare(b.nickname || "") : a.isHost ? -1 : 1));
   const onlineCount = playerList.filter((p) => p.isConnected).length;
   const isReady = Boolean(player?.isReady);
 
@@ -142,23 +146,54 @@ export default function PlayClient({ roomCode }: Props) {
           </div>
         )}
 
-        {/* Waiting Status */}
-        <section className="flex-1 flex flex-col items-center justify-center py-6 text-center" role="status">
-          <p className="mb-2 text-4xl animate-bounce" aria-hidden="true">
-            📺
-          </p>
-          <h2 className="mb-1 text-lg font-bold">請看電視大螢幕</h2>
-          <p className="text-xs text-white/50 max-w-xs">
+        {/* Waiting status + roster */}
+        <section className="flex-1 py-4 text-center" role="status" aria-label="等待房主開始">
+          {bigScreen ? (
+            <>
+              <p className="mb-2 text-4xl animate-bounce" aria-hidden="true">
+                📺
+              </p>
+              <h2 className="mb-1 text-lg font-bold">請看電視大螢幕</h2>
+            </>
+          ) : (
+            <>
+              <p className="mb-2 text-4xl animate-bounce" aria-hidden="true">
+                ⏳
+              </p>
+              <h2 className="mb-1 text-lg font-bold">等房主開始遊戲</h2>
+            </>
+          )}
+          <p className="mx-auto mb-4 max-w-xs text-xs text-white/50">
             目前 {onlineCount} 人在線
             {game ? `（最少 ${game.minPlayers} 人開局）` : ""}，等待房主開啟遊戲！
           </p>
+          <ul className="mx-auto grid max-w-xs grid-cols-2 gap-2 text-left" aria-label="房內玩家">
+            {playerList.map((p) => (
+              <li
+                key={p.id}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm",
+                  p.isConnected ? "border-white/10 bg-white/5" : "border-transparent bg-white/5 opacity-40",
+                  p.isReady && p.isConnected && "border-emerald-500/30 bg-emerald-500/5",
+                )}
+              >
+                <span aria-hidden="true">{p.avatar}</span>
+                <span className="min-w-0 flex-1 truncate font-semibold">{p.nickname}</span>
+                {p.isHost ? (
+                  <Crown className="h-3.5 w-3.5 shrink-0 text-yellow-400" aria-label="房主" />
+                ) : p.isReady ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" aria-label="已就緒" />
+                ) : null}
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Reaction Bar */}
         <div className="mt-auto pt-4 pb-2">
           <p className="mb-2 text-center text-xs text-white/40 flex items-center justify-center gap-1">
             <Sparkles className="h-3 w-3 text-pink-400" aria-hidden="true" />
-            點擊表情，發送即時氣氛到大螢幕：
+            {bigScreen ? "點擊表情，發送即時氣氛到大螢幕：" : "點擊表情，所有人的手機都會飄過："}
           </p>
           <div className="grid grid-cols-6 gap-2">
             {REACTIONS.map((emoji) => (

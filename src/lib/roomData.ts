@@ -94,6 +94,7 @@ export function parseRoom(data: Record<string, unknown> | null, roomCode: string
     expiresAt: data.expiresAt as number | undefined,
     settings: normalizeSettings(String(data.gameId ?? ""), (data.settings as Partial<RoomSettings>) ?? {}),
     players: cleanPlayers,
+    ...(data.screenMode === "tv" || data.screenMode === "phones" ? { screenMode: data.screenMode } : {}),
     reactions: cleanReactions,
     gameState: normalizeGameState(String(data.gameId ?? ""), data.gameState),
     lastTickAt: data.lastTickAt as number | undefined,

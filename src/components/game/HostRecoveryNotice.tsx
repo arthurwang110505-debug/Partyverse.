@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { HOST_STALE_MS } from "@/constants/room";
 import { useRoom } from "@/providers/RoomContext";
+import { serverNow } from "@/engine/clock";
+import { usesBigScreen } from "@/lib/stage";
 import { useToast } from "@/providers/ToastProvider";
 import { Button } from "@/components/ui/Button";
 
@@ -13,8 +15,8 @@ export function HostRecoveryNotice() {
   const [now, setNow] = useState(0);
   const [pending, setPending] = useState(false);
   useEffect(() => {
-    setNow(Date.now());
-    const timer = setInterval(() => setNow(Date.now()), 1000);
+    setNow(serverNow());
+    const timer = setInterval(() => setNow(serverNow()), 1000);
     return () => clearInterval(timer);
   }, []);
   if (!room || room.status !== "PLAYING") return null;
@@ -37,7 +39,11 @@ export function HostRecoveryNotice() {
   return (
     <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 p-3 text-center" role="status">
       <p className="text-sm text-amber-200">
-        {disconnected ? "正在重新連線，請保留此頁面…" : "房主連線停滯，可以接管以繼續遊戲。"}
+        {disconnected
+          ? "正在重新連線，請保留此頁面…"
+          : usesBigScreen(room)
+            ? "房主連線停滯，可以接管以繼續遊戲。"
+            : "房主好像離線了，幾秒後會自動換人主持；也可以直接接手。"}
       </p>
       {stale && !disconnected && (
         <Button className="mt-2" size="sm" variant="ghost" loading={pending} onClick={() => void takeOver()}>

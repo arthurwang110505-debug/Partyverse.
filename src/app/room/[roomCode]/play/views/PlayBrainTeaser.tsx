@@ -68,7 +68,7 @@ export default function PlayBrainTeaser() {
             <div className="mt-4">
               <RoundTimer timeLeft={state.timeLeft} total={Math.max(10, room?.settings?.timer ?? 20)} endLabel="揭曉" compact haptic />
             </div>
-            {mine !== undefined && <p className="mt-3 text-sm text-white/70">已送出！看大螢幕等揭曉 👀</p>}
+            {mine !== undefined && <p className="mt-3 text-sm text-white/70">已送出！看主畫面等揭曉 👀</p>}
           </>
         )}
 
@@ -95,7 +95,7 @@ export default function PlayBrainTeaser() {
             <h2 className="text-2xl font-black text-white">
               {state.winnerIds.includes(player.id) ? "你是急轉彎大師！" : "比賽結束！"}
             </h2>
-            <p className="mt-2 text-sm text-white/60">總分 {state.currentScores[player.id] ?? 0}，排名看大螢幕。</p>
+            <p className="mt-2 text-sm text-white/60">總分 {state.currentScores[player.id] ?? 0}，排名看主畫面。</p>
           </div>
         )}
       </div>

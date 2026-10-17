@@ -8,7 +8,7 @@ export interface GameGuide {
 export const GAME_GUIDES: Record<string, GameGuide> = {
   bombcountdown: {
     goal: "在炸彈爆炸前答對，把它傳出去！",
-    controls: "拿到炸彈時看手機題目並點答案；其他人看大螢幕。答對不會重置引信。",
+    controls: "拿到炸彈時看手機題目並點答案；其他人看主畫面。答對不會重置引信。",
     scoring: "答對 +10；答錯引信扣 1 秒。每局最後倖存者 +50，下局全員回歸。",
   },
   drawandguess: {
@@ -33,7 +33,7 @@ export const GAME_GUIDES: Record<string, GameGuide> = {
   },
   song3seconds: {
     goal: "從逐步揭露的歌詞猜出歌名。",
-    controls: "先看大螢幕的歌詞提示，再在手機選歌名。本模式是看歌詞猜歌，不播放歌曲。",
+    controls: "先看主畫面的歌詞提示，再在手機選歌名。本模式是看歌詞猜歌，不播放歌曲。",
     scoring: "答對 +10，快速答對有額外加分；送出後等待答案揭曉。",
   },
   kingtonight: {
@@ -43,12 +43,12 @@ export const GAME_GUIDES: Record<string, GameGuide> = {
   },
   fireworkmaster: {
     goal: "親手畫出最受歡迎的煙火，讓全場驚豔。",
-    controls: "用手指在手機畫布上畫出任何圖案並送出。大螢幕會把你的畫變成煙火施放，再投給喜歡的作品。",
+    controls: "用手指在手機畫布上畫出任何圖案並送出。主畫面會把你的畫變成煙火施放，再投給喜歡的作品。",
     scoring: "作品每得到一票 +15。",
   },
   realbattle: {
     goal: "在倒數結束前收集最多寶物。",
-    controls: "手機方向鍵移動，大螢幕看位置；撞到別人會把對方推開。",
+    controls: "手機方向鍵移動，主畫面看位置；撞到別人會把對方推開。",
     scoring: "金幣 +2、星星 +5、巨星 +10。分數最高者獲勝。",
   },
   mysteryroom: {
@@ -58,17 +58,17 @@ export const GAME_GUIDES: Record<string, GameGuide> = {
   },
   musicalchairs: {
     goal: "音樂停下才搶座，撐到最後！",
-    controls: "注意大螢幕，出現搶座提示時點手機座位按鈕。出局後觀戰，下場再來。",
+    controls: "注意主畫面，出現搶座提示時點手機座位按鈕。出局後觀戰，下場再來。",
     scoring: "成功晉級 +10，最後勝出 +50；最慢的玩家本場淘汰。",
   },
   whackmoles: {
     goal: "比別人更快敲中冒出的木頭。",
-    controls: "手機和大螢幕同步顯示九宮格，木頭 🪵 冒出來就點它；同一塊只有第一個敲中的人得分。",
+    controls: "手機和主畫面同步顯示九宮格，木頭 🪵 冒出來就點它；同一塊只有第一個敲中的人得分。",
     scoring: "命中 +1，連擊有額外加分；打空會中斷連擊。",
   },
   simonsays: {
     goal: "記住每關的全新顏色順序，挑戰越來越長的序列。",
-    controls: "先看大螢幕（手機也會同步）閃出的順序，輪到你時照順序點完整串，全部點完才會送出判定；按錯可以先退一格。",
+    controls: "先看主畫面（手機也會同步）閃出的順序，輪到你時照順序點完整串，全部點完才會送出判定；按錯可以先退一格。",
     scoring: "完整答對序列，得到等同序列長度的分數；完成最高難度另有獎勵。",
   },
   wordchain: {
@@ -78,12 +78,12 @@ export const GAME_GUIDES: Record<string, GameGuide> = {
   },
   brainteaser: {
     goal: "腦筋急轉彎！搶先選出最機車的正確答案。",
-    controls: "看大螢幕的題目，在手機四選一。每題只能選一次，想清楚再按！",
+    controls: "看主畫面的題目，在手機四選一。每題只能選一次，想清楚再按！",
     scoring: "答對 +10，越快最高再 +10；全場第一個答對再 +5。",
   },
   followme: {
-    goal: "大螢幕出什麼指令，就最快做出並按出正確動作。",
-    controls: "看到大螢幕的指令（拍手/跺腳/舉手/喊派對），一邊做出動作，一邊在手機按對應按鈕，一題只要按一下。",
+    goal: "主畫面出什麼指令，就最快做出並按出正確動作。",
+    controls: "看到主畫面的指令（拍手/跺腳/舉手/喊派對），一邊做出動作，一邊在手機按對應按鈕，一題只要按一下。",
     scoring: "答對 10 分＋速度加分（最快 +10）；連對 3 題起每題再 +5；按錯 −5 分、連擊歸零。",
   },
 };

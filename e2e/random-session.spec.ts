@@ -36,7 +36,8 @@ test("drawing a 3-minute playlist fills the budget and opens the room on its fir
   await expect.poll(drawnTotal).toBeLessThanOrEqual(3);
 
   // Open the room on the first entry of the playlist.
-  await page.getByLabel("房主暱稱（顯示在電視上）").fill("客廳電視");
+  await page.getByRole("radio", { name: /有大螢幕/ }).click();
+  await page.getByLabel("房主暱稱").fill("客廳電視");
   await page.getByRole("button", { name: /開始 3分鐘快閃/ }).click();
   await page.waitForURL(/\/room\/[^/]+\/host$/);
   await expect(page.getByRole("heading", { name: "遊戲大廳" })).toBeVisible();

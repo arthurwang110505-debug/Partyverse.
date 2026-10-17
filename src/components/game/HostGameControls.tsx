@@ -5,12 +5,14 @@ import { useRoom } from "@/providers/RoomContext";
 import { useToast } from "@/providers/ToastProvider";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { useEmbeddedStage } from "./StageContext";
 
 export function HostGameControls() {
   const { endRound, endGame, isHost } = useRoom();
   const { toast } = useToast();
   const [confirm, setConfirm] = useState<"restart" | "end" | null>(null);
   const [pending, setPending] = useState(false);
+  const embedded = useEmbeddedStage();
   const run = async () => {
     if (pending) return;
     setPending(true);
@@ -23,7 +25,7 @@ export function HostGameControls() {
       setPending(false);
     }
   };
-  if (!isHost) return null;
+  if (!isHost || embedded) return null;
   return (
     <>
       <div className="mt-6 flex flex-wrap justify-center gap-2">

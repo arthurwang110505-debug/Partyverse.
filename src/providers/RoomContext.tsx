@@ -13,7 +13,7 @@ import {
   update,
 } from "firebase/database";
 import { onAuthStateChanged, signInAnonymously, type User } from "firebase/auth";
-import type { Player, ReactionItem, Room, RoomSessionPlan, RoomSettings } from "@/types";
+import type { HostMode, Player, ReactionItem, Room, RoomSessionPlan, RoomSettings } from "@/types";
 import { GAMES } from "@/constants/games";
 import { NICKNAME_KEY, ROOM_TTL_MS, SESSION_KEY } from "@/constants/room";
 import { db, auth as authInstance } from "@/lib/firebase";
@@ -37,6 +37,7 @@ import { generateRoomCode, pickAvatar, sanitizeNickname, stripUndefined } from "
 import { getGameEngine } from "@/engine";
 import { sfx } from "@/lib/sound";
 import { parseRoom } from "@/lib/roomData";
+import { hostSeat, usesBigScreen } from "@/lib/stage";
 import { normalizeSettings } from "@/constants/gameSettings";
 import {
   advanceRoomGame,
@@ -90,6 +91,8 @@ interface RoomContextValue {
     nickname: string,
     settings?: RoomSettings,
     sessionPlan?: RoomSessionPlan,
+    /** Defaults to `play`: a phone host who also plays. */
+    hostMode?: HostMode,
   ) => Promise<string>;
   joinRoom: (roomCode: string, nickname: string) => Promise<void>;
   leaveRoom: () => Promise<void>;
@@ -106,6 +109,8 @@ interface RoomContextValue {
   /** Finish the current session game and load the next one. Null once the session is over. */
   advanceSession: () => Promise<RoomSessionPlan | null>;
   updateSettings: (patch: Partial<RoomSettings>) => Promise<void>;
+  /** Lobby only, phone-hosted rooms: switch the host between playing and refereeing. */
+  setHostPlays: (plays: boolean) => Promise<void>;
   submitAction: (action: unknown) => Promise<void>;
   /** RESULTS screen: vote which game to play next (host still decides). */
   voteNextGame: (gameId: string) => Promise<void>;
@@ -515,6 +520,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       rawNickname: string,
       settings?: RoomSettings,
       sessionPlan?: RoomSessionPlan,
+      hostMode: HostMode = "play",
     ): Promise<string> => {
       const game = GAMES.find((g) => g.id === gameId);
       if (!game) throw new Error("找不到這個遊戲");
@@ -523,6 +529,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       const authUser = await ensureAuth();
       const nickname = sanitizeNickname(rawNickname) || "房主";
       const baseSettings = normalizeSettings(gameId, settings);
+      const seat = hostSeat(hostMode);
 
       // Attempt Firebase mode first if available
       if (db && !localModeRef.current) {
@@ -535,7 +542,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
               nickname,
               avatar: pickAvatar(nickname, []),
               isHost: true,
-              role: "display",
+              role: seat.role,
               isConnected: true,
               isReady: true,
               score: 0,
@@ -550,6 +557,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
               expiresAt: now + ROOM_TTL_MS,
               settings: baseSettings,
               players: { [authUser.uid]: hostPlayer },
+              screenMode: seat.screenMode,
               gameState: {},
               ...(sessionPlan ? { sessionPlan } : {}),
             };
@@ -598,7 +606,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         nickname,
         avatar: pickAvatar(nickname, []),
         isHost: true,
-        role: "display",
+        role: seat.role,
         isConnected: true,
         isReady: true,
         score: 0,
@@ -613,6 +621,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         expiresAt: now + ROOM_TTL_MS,
         settings: baseSettings,
         players: { [authUser.uid]: hostPlayer },
+        screenMode: seat.screenMode,
         gameState: {},
         ...(sessionPlan ? { sessionPlan } : {}),
       };
@@ -892,6 +901,21 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     [mutateHostRoom],
   );
 
+  const setHostPlays = useCallback(
+    (plays: boolean) =>
+      mutateHostRoom((current) => {
+        if (current.status !== "LOBBY") throw new Error("遊戲進行中不能更改房主身分");
+        if (usesBigScreen(current)) throw new Error("大螢幕房間的房主不下場");
+        const host = current.players[current.hostPlayerId];
+        if (!host) return current;
+        return {
+          ...current,
+          players: { ...current.players, [host.id]: { ...host, role: plays ? "player" : "display", isReady: true } },
+        };
+      }),
+    [mutateHostRoom],
+  );
+
   const submitAction = useCallback(
     async (action: unknown) => {
       if (!room || !user) throw new Error("尚未加入房間");
@@ -1046,6 +1070,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         startSession,
         advanceSession,
         updateSettings,
+        setHostPlays,
         submitAction,
         voteNextGame,
         toggleReady,

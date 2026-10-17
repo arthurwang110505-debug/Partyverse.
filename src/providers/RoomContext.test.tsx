@@ -162,10 +162,10 @@ function CreateTree() {
   );
 }
 
-async function createRoom() {
+async function createRoom(hostMode: "play" | "referee" | "tv" = "tv") {
   let code = "";
   await act(async () => {
-    code = await api!.createRoom("bombcountdown", "客廳電視");
+    code = await api!.createRoom("bombcountdown", "客廳電視", undefined, undefined, hostMode);
   });
   return code;
 }
@@ -395,5 +395,58 @@ describe("creating a room after closing one", () => {
     const switched = fake.read(`rooms/${code}`) as { gameId: string; sessionPlan?: unknown };
     expect(switched.gameId).toBe("brainteaser");
     expect(switched.sessionPlan).toBeUndefined();
+  });
+});
+
+describe("hosting from a phone", () => {
+  type StoredRoom = {
+    screenMode: string;
+    hostPlayerId: string;
+    status: string;
+    players: Record<string, { role: string; isHost: boolean; isReady: boolean }>;
+  };
+
+  it("seats a host who also plays as a real player, with no big screen", async () => {
+    render(<CreateTree />);
+    const code = await createRoom("play");
+    const stored = fake.read(`rooms/${code}`) as StoredRoom;
+    expect(stored.screenMode).toBe("phones");
+    expect(stored.players[stored.hostPlayerId]).toMatchObject({ role: "player", isHost: true, isReady: true });
+  });
+
+  it("seats a referee host as a non-playing display seat, still without a big screen", async () => {
+    render(<CreateTree />);
+    const code = await createRoom("referee");
+    const stored = fake.read(`rooms/${code}`) as StoredRoom;
+    expect(stored.screenMode).toBe("phones");
+    expect(stored.players[stored.hostPlayerId].role).toBe("display");
+  });
+
+  it("marks a TV room as tv", async () => {
+    render(<CreateTree />);
+    const code = await createRoom("tv");
+    expect((fake.read(`rooms/${code}`) as StoredRoom).screenMode).toBe("tv");
+  });
+
+  it("lets the lobby host switch between playing and refereeing, but not in a TV room", async () => {
+    render(<CreateTree />);
+    const code = await createRoom("play");
+    await flush("rooms");
+    await act(async () => {
+      await api!.setHostPlays(false);
+    });
+    let stored = fake.read(`rooms/${code}`) as StoredRoom;
+    expect(stored.players[stored.hostPlayerId].role).toBe("display");
+    await act(async () => {
+      await api!.setHostPlays(true);
+    });
+    stored = fake.read(`rooms/${code}`) as StoredRoom;
+    expect(stored.players[stored.hostPlayerId].role).toBe("player");
+
+    cleanup();
+    render(<CreateTree />);
+    await createRoom("tv");
+    await flush("rooms");
+    await expect(api!.setHostPlays(true)).rejects.toThrow("大螢幕");
   });
 });

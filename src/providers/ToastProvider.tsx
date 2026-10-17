@@ -2,14 +2,17 @@
 
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 
+type ToastTone = "error" | "info";
+
 interface ToastItem {
   id: number;
   message: string;
+  tone: ToastTone;
 }
 
 interface ToastContextValue {
   /** Show a transient message at the bottom of the screen. */
-  toast: (message: string) => void;
+  toast: (message: string, tone?: ToastTone) => void;
 }
 
 const ToastContext = createContext<ToastContextValue>({ toast: () => undefined });
@@ -30,9 +33,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(0);
 
-  const toast = useCallback((message: string) => {
+  const toast = useCallback((message: string, tone: ToastTone = "error") => {
     const id = ++nextId.current;
-    setItems((prev) => [...prev.slice(-2), { id, message }]);
+    setItems((prev) => [...prev.slice(-2), { id, message, tone }]);
     window.setTimeout(() => {
       setItems((prev) => prev.filter((item) => item.id !== id));
     }, 3200);
@@ -49,7 +52,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <p
             key={item.id}
             role="status"
-            className="glass-strong max-w-xs rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-2.5 text-center text-sm font-medium text-red-200 shadow-lg animate-toast-in"
+            className={
+              item.tone === "info"
+                ? "glass-strong max-w-xs rounded-xl border border-cyan-400/30 bg-cyan-500/15 px-4 py-2.5 text-center text-sm font-medium text-cyan-100 shadow-lg animate-toast-in"
+                : "glass-strong max-w-xs rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-2.5 text-center text-sm font-medium text-red-200 shadow-lg animate-toast-in"
+            }
           >
             {item.message}
           </p>

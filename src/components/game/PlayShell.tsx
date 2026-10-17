@@ -9,7 +9,8 @@ import { ConnectionBadge } from "@/components/game/ConnectionBadge";
 import { FloatingReactions } from "@/components/game/FloatingReactions";
 import { LeaveGuard } from "@/components/game/LeaveGuard";
 import { ScoreDelta } from "@/components/game/ScoreDelta";
-import { HostGameControls } from "./HostGameControls";
+import { HostMenu } from "./HostMenu";
+import { StageDock } from "./StageDock";
 import { HostRecoveryNotice } from "./HostRecoveryNotice";
 import { GameplayFeedback } from "./GameplayFeedback";
 import { cn } from "@/lib/utils";
@@ -84,9 +85,10 @@ export function PlayShell({ children, className, round }: PlayShellProps) {
       <div className={cn("mx-auto w-full max-w-md flex-1 px-4 pb-28 relative z-10", className)}>
         <HostRecoveryNotice />
         <GameplayFeedback phone />
+        <StageDock />
         {children}
-        {isHost && player?.role !== "display" && <HostGameControls />}
       </div>
+      {isHost && player?.role !== "display" && <HostMenu />}
 
       {/* Bottom dock — sits above the iPhone home indicator thanks to dock-safe. */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-2 px-4 dock-safe">

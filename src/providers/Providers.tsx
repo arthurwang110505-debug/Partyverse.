@@ -2,6 +2,7 @@
 
 import { RoomProvider } from "@/providers/RoomContext";
 import { ToastProvider } from "@/providers/ToastProvider";
+import { RoomPresence } from "@/components/game/RoomPresence";
 import type { ReactNode } from "react";
 
 /**
@@ -11,7 +12,10 @@ import type { ReactNode } from "react";
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <RoomProvider>
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        <RoomPresence />
+        {children}
+      </ToastProvider>
     </RoomProvider>
   );
 }

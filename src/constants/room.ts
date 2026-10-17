@@ -24,3 +24,10 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
 };
 
 export const MAX_NICKNAME_LENGTH = 16;
+
+/**
+ * Automatic host hand-off on a phone-hosted room: the first in line waits this
+ * long after noticing the host is gone, each later one waits another STEP.
+ */
+export const HANDOFF_GRACE_MS = 5_000;
+export const HANDOFF_STEP_MS = 4_000;

@@ -49,7 +49,8 @@ test("one TV and four independent demo tabs join, play, refresh, rematch and swi
   context,
 }) => {
   await tv.goto("/create/everybodyknows");
-  await tv.getByLabel("房主暱稱（顯示在電視上）").fill("客廳電視");
+  await tv.getByRole("radio", { name: /有大螢幕/ }).click();
+  await tv.getByLabel("房主暱稱").fill("客廳電視");
   await tv.getByLabel("回合數", { exact: true }).selectOption("1");
   await tv.getByRole("button", { name: "建立房間", exact: true }).click();
   await tv.waitForURL(/\/room\/[^/]+\/host$/);
@@ -150,7 +151,7 @@ test("drawing streams before pointer-up, guesses stay secret, and controls stop 
   await drawer.mouse.up();
   await expect.poll(async () => (await readRoom(tv, room.id)).gameState.strokes as unknown[]).toHaveLength(1);
   const prompt = (room.gameState.prompt as { word: string }).word;
-  await guesser.getByLabel("看看大螢幕，你猜這是什麼？").fill(prompt);
+  await guesser.getByLabel("看看主畫面，你猜這是什麼？").fill(prompt);
   await guesser.getByRole("button", { name: "送出答案", exact: true }).click();
   await expect(guesser.getByText(/答對了！\+/)).toBeVisible();
   await expect(tv.getByLabel("即時猜題動態")).toContainText("答對了！");
@@ -161,7 +162,7 @@ test("drawing streams before pointer-up, guesses stay secret, and controls stop 
     const phone = await context.newPage();
     await seed(phone, room, id);
     await phone.goto(`/room/${room.id}/play`);
-    await phone.getByLabel("看看大螢幕，你猜這是什麼？").fill(prompt);
+    await phone.getByLabel("看看主畫面，你猜這是什麼？").fill(prompt);
     await phone.getByRole("button", { name: "送出答案", exact: true }).click();
   }
   await expect(drawer.getByRole("img", { name: "繪畫畫布" })).toHaveCount(0);

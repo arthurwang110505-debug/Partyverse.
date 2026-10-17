@@ -30,10 +30,10 @@ describe("shared match lifecycle", () => {
   });
   it("does not count the TV or offline people toward the minimum", () => {
     const room = testRoom("drawandguess", 3);
-    expect(() => startPlayingRoom(room)).toThrow("4 位手機玩家");
+    expect(() => startPlayingRoom(room)).toThrow("4 位玩家");
     const full = testRoom("drawandguess");
     full.players.p4.isConnected = false;
-    expect(() => startPlayingRoom(full)).toThrow("4 位手機玩家");
+    expect(() => startPlayingRoom(full)).toThrow("4 位玩家");
   });
   it("freezes the participating roster, letting late joiners spectate until rematch", () => {
     const room = startPlayingRoom(testRoom("everybodyknows"));

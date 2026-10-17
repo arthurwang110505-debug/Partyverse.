@@ -12,6 +12,7 @@ import {
   Crown,
   Dices,
   Link2,
+  Maximize2,
   Power,
   Settings,
   Share2,
@@ -21,6 +22,9 @@ import {
   X,
 } from "lucide-react";
 import { useRoom } from "@/providers/RoomContext";
+import { useToast } from "@/providers/ToastProvider";
+import { shareInvite } from "@/lib/invite";
+import { usesBigScreen } from "@/lib/stage";
 import { GAMES } from "@/constants/games";
 import { playModeById } from "@/constants/playModes";
 import type { PlayModeId, Player } from "@/types";
@@ -42,8 +46,22 @@ import { RoomSettingsFields } from "@/components/game/RoomSettingsFields";
 
 export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
   const router = useRouter();
-  const { room, startGame, kickPlayer, endRoom, updateSettings, isLocalMode, isHost, startSession, advanceSession } =
-    useRoom();
+  const {
+    room,
+    player: me,
+    startGame,
+    kickPlayer,
+    endRoom,
+    updateSettings,
+    setHostPlays,
+    isLocalMode,
+    isHost,
+    startSession,
+    advanceSession,
+  } = useRoom();
+  const { toast } = useToast();
+  const bigScreen = usesBigScreen(room);
+  const hostPlays = me ? isParticipant(me) : false;
 
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -108,6 +126,12 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
     } catch {
       setError(failure);
     }
+  };
+
+  const handleShare = async () => {
+    const outcome = await shareInvite(roomCode, joinUrl);
+    if (outcome === "copied") toast("邀請連結已複製，貼給朋友吧", "info");
+    if (outcome === "failed") setError("無法分享，請讓朋友輸入房間代碼加入");
   };
 
   const handleEnd = async () => {
@@ -176,7 +200,13 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
           </div>
           <h1 className="mb-2 text-4xl font-bold tracking-tight md:text-5xl">遊戲大廳</h1>
           <p className="text-sm text-white/40">把代碼或 QR code 分享給朋友，手機掃描即可加入</p>
-          <p className="mt-3 text-sm text-cyan-200/80">📺 電視不占玩家名額，所有參賽者請用手機加入。</p>
+          {bigScreen ? (
+            <p className="mt-3 text-sm text-cyan-200/80">📺 電視不占玩家名額，所有參賽者請用手機加入。</p>
+          ) : (
+            <p className="mt-3 text-sm text-cyan-200/80">
+              📱 手機主持：遊戲畫面會同步顯示在每個人的手機上，不需要電視。
+            </p>
+          )}
           {isLocalMode && (
             <p className="mt-2 rounded-xl border border-amber-400/20 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200">
               本地展示：房間只在這個瀏覽器內同步，請用「開新分頁當玩家」。跨手機或無痕視窗需設定 Firebase。
@@ -211,6 +241,15 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
 
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Button
+              variant="accent"
+              size="md"
+              disabled={!joinUrl}
+              onClick={() => void handleShare()}
+              className="w-full font-bold sm:w-auto"
+            >
+              <Share2 className="h-4 w-4" aria-hidden="true" /> 分享邀請給朋友
+            </Button>
+            <Button
               variant="ghost"
               size="md"
               onClick={() => void copyText(roomCode, setCopied, "無法複製，請手動選取代碼")}
@@ -228,7 +267,7 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
               {copiedLink ? "已複製連結！" : "複製邀請連結"}
             </Button>
             <Button variant="ghost" size="md" onClick={() => setShowQR(true)} disabled={!joinUrl}>
-              <Share2 className="h-4 w-4" aria-hidden="true" /> 全螢幕 QR
+              <Maximize2 className="h-4 w-4" aria-hidden="true" /> 全螢幕 QR
             </Button>
             {isLocalMode && (
               <Link
@@ -270,7 +309,9 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
                 <span className="text-xl">🏆</span>
                 <div>
                   <p className="font-semibold text-white/80">3. 手機即手把</p>
-                  <p className="text-[11px] text-white/40">電視看局面，手機同步搶分！</p>
+                  <p className="text-[11px] text-white/40">
+                    {bigScreen ? "電視看局面，手機同步搶分！" : "畫面直接在手機上，不用電視！"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -325,6 +366,29 @@ export default function HostLobbyClient({ roomCode }: { roomCode: string }) {
               </span>
             )}
           </div>
+
+          {isHost && !bigScreen && (
+            <label className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm">
+              <span>
+                <span className="block font-semibold">我也要下場玩</span>
+                <span className="block text-xs text-white/50">
+                  {hostPlays ? "你會出現在名單裡，和大家一起得分" : "你只負責主持，不計分、不占名額"}
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                role="switch"
+                aria-label="我也要下場玩"
+                className="h-6 w-11 accent-violet-500"
+                checked={hostPlays}
+                onChange={(e) =>
+                  void setHostPlays(e.target.checked).catch((err) =>
+                    setError(err instanceof Error ? err.message : "無法切換"),
+                  )
+                }
+              />
+            </label>
+          )}
 
           <ul className="space-y-2">
             <AnimatePresence initial={false}>

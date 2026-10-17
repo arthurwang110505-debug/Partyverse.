@@ -39,9 +39,9 @@ export const GAMES: GameDefinition[] = [
     id: "fireworkmaster",
     name: "煙火大師",
     nameEn: "Firework Master",
-    description: "親手畫出你的煙火，在大螢幕炸開！",
+    description: "親手畫出你的煙火，在主畫面炸開！",
     longDescription:
-      "每位玩家用手指在手機畫布上自由作畫——愛心、名字、笑臉，畫什麼都行！送出後大螢幕會把每張畫變成一發煙火，火花沿著你畫的線條綻放，最後大家投票選出最佳煙火。",
+      "每位玩家用手指在手機畫布上自由作畫——愛心、名字、笑臉，畫什麼都行！送出後主畫面會把每張畫變成一發煙火，火花沿著你畫的線條綻放，最後大家投票選出最佳煙火。",
     minPlayers: 4,
     maxPlayers: 20,
     estimatedDuration: "5-10 分鐘",
@@ -58,7 +58,7 @@ export const GAMES: GameDefinition[] = [
     nameEn: "Everybody Knows",
     description: "社交投票，看看誰和大家不一樣",
     longDescription:
-      "主螢幕顯示趣味社交問題（如：「誰最容易在旅行中迷路？」），玩家在手機上匿名投票，大螢幕即時揭曉百分比統計與動態長條圖！",
+      "主畫面顯示趣味社交問題（如：「誰最容易在旅行中迷路？」），玩家在手機上匿名投票，主畫面即時揭曉百分比統計與動態長條圖！",
     minPlayers: 4,
     maxPlayers: 20,
     estimatedDuration: "5-10 分鐘",
@@ -75,7 +75,7 @@ export const GAMES: GameDefinition[] = [
     nameEn: "Draw & Guess",
     description: "塗鴉猜題，畫出你的想法！",
     longDescription:
-      "所有玩家公平輪流作畫，筆跡邊畫邊同步到大螢幕。其他人看分類與逐步提示猜題，越快猜中得分越高（10–25 分），每有人猜中畫家加 5 分。",
+      "所有玩家公平輪流作畫，筆跡邊畫邊同步到主畫面。其他人看分類與逐步提示猜題，越快猜中得分越高（10–25 分），每有人猜中畫家加 5 分。",
     minPlayers: 4,
     maxPlayers: 16,
     estimatedDuration: "5-10 分鐘",
@@ -90,9 +90,9 @@ export const GAMES: GameDefinition[] = [
     id: "realbattle",
     name: "大亂鬥",
     nameEn: "Real Battle",
-    description: "手機當手把，主螢幕大亂鬥！",
+    description: "手機當手把，主畫面大亂鬥！",
     longDescription:
-      "TV / iPad 顯示角色與地圖，玩家將手機作為無線遊戲手把（虛擬搖桿/按鈕），操控小角色搶奪金幣、星星與道具，最後分數最高者勝出！",
+      "主畫面顯示角色與地圖，玩家將手機作為無線遊戲手把（虛擬搖桿/按鈕），操控小角色搶奪金幣、星星與道具，最後分數最高者勝出！",
     minPlayers: 4,
     maxPlayers: 20,
     estimatedDuration: "3-10 分鐘",
@@ -109,7 +109,7 @@ export const GAMES: GameDefinition[] = [
     nameEn: "Mystery Room",
     description: "合作解謎，拼湊真相！",
     longDescription:
-      "每位玩家拿到不同的局部線索，大家必須透過口頭交流拼湊真相。主螢幕逐步揭露時間線與證物，合作解開案件！",
+      "每位玩家拿到不同的局部線索，大家必須透過口頭交流拼湊真相。主畫面逐步揭露時間線與證物，合作解開案件！",
     minPlayers: 4,
     maxPlayers: 10,
     estimatedDuration: "10-20 分鐘",
@@ -126,7 +126,7 @@ export const GAMES: GameDefinition[] = [
     nameEn: "AI Bullshit",
     description: "吹牛大賽，看誰最會扯！",
     longDescription:
-      "針對怪異冷知識，每位玩家在手機寫下 1–2 個煞有介事的假答案（人少時系統也會補上 AI 假答案）。所有真假答案混在一起顯示於大螢幕，玩家投票猜哪個才是真的！",
+      "針對怪異冷知識，每位玩家在手機寫下 1–2 個煞有介事的假答案（人少時系統也會補上 AI 假答案）。所有真假答案混在一起顯示於主畫面，玩家投票猜哪個才是真的！",
     minPlayers: 4,
     maxPlayers: 20,
     estimatedDuration: "5-10 分鐘",
@@ -143,7 +143,7 @@ export const GAMES: GameDefinition[] = [
     nameEn: "3 Second Song Guess",
     description: "歌詞閃現 3 秒開搶，音樂達人決戰！",
     longDescription:
-      "題庫超過 30 首（華語、J-Pop、西洋、洗腦神曲），每場隨機出題！大螢幕 3 秒倒數後閃現一句關鍵歌詞，手機四選一搶答歌名。每 2 秒多解鎖 1 個字——拖得越久越容易，所以手速就是你的得分！",
+      "題庫超過 30 首（華語、J-Pop、西洋、洗腦神曲），每場隨機出題！主畫面 3 秒倒數後閃現一句關鍵歌詞，手機四選一搶答歌名。每 2 秒多解鎖 1 個字——拖得越久越容易，所以手速就是你的得分！",
     minPlayers: 4,
     maxPlayers: 20,
     estimatedDuration: "5-15 分鐘",
@@ -177,7 +177,7 @@ export const GAMES: GameDefinition[] = [
     nameEn: "Musical Chairs",
     description: "音樂一停，搶不到椅子就出局！",
     longDescription:
-      "大螢幕播放加速的節拍，每回合椅子總比人少一把。音樂停止前盡快點下「坐下」，點得最慢的人站着出局。撐到最後一把椅子的人稱王！",
+      "主畫面播放加速的節拍，每回合椅子總比人少一把。音樂停止前盡快點下「坐下」，點得最慢的人站着出局。撐到最後一把椅子的人稱王！",
     minPlayers: 3,
     maxPlayers: 20,
     estimatedDuration: "3-6 分鐘",
@@ -188,7 +188,7 @@ export const GAMES: GameDefinition[] = [
     tags: ["反應", "淘汰", "經典"],
     difficulty: "簡單",
     rules: [
-      "音樂播放時盯著大螢幕，節拍會越來越快",
+      "音樂播放時盯著主畫面，節拍會越來越快",
       "音樂一停，立刻在手機點下「坐下」",
       "每回合椅子比人少一把，點得最慢的人出局",
       "每撐過一回合 +10 分，最後一位 +50 分",
@@ -201,7 +201,7 @@ export const GAMES: GameDefinition[] = [
     nameEn: "Whack-a-Mole",
     description: "木頭冒出來就敲，全場比誰敲得最多！",
     longDescription:
-      "3×3 的洞會隨機冒出木頭，手機和大螢幕同步顯示。木頭一冒出來就在手機上敲它，每塊只能被第一個人敲到。三回合累加，總擊中數最高者獲勝，連續敲中 5 塊還有加碼！",
+      "3×3 的洞會隨機冒出木頭，手機和主畫面同步顯示。木頭一冒出來就在手機上敲它，每塊只能被第一個人敲到。三回合累加，總擊中數最高者獲勝，連續敲中 5 塊還有加碼！",
     minPlayers: 3,
     maxPlayers: 20,
     estimatedDuration: "3-5 分鐘",
@@ -212,7 +212,7 @@ export const GAMES: GameDefinition[] = [
     tags: ["反應", "手速", "競賽"],
     difficulty: "簡單",
     rules: [
-      "木頭會同時出現在手機和大螢幕的九宮格",
+      "木頭會同時出現在手機和主畫面的九宮格",
       "看到木頭 🪵 就立刻在手機上點它",
       "每塊木頭只能被第一個人敲到，敲空洞不扣分",
       "連續敲中 5 塊，額外 +5 分",
@@ -223,9 +223,9 @@ export const GAMES: GameDefinition[] = [
     id: "simonsays",
     name: "西蒙說",
     nameEn: "Simon Says",
-    description: "記住大螢幕的顏色順序，照著點出來！",
+    description: "記住主畫面的顏色順序，照著點出來！",
     longDescription:
-      "大螢幕（手機同步）閃出一串四色方塊，盯緊了！閃完後在手機上照著順序點完整串，點完才一次判定，按錯還能退一格。每過一關都是全新序列，長度再加一格、絕不重播舊題目，答錯本輪出局。三輪比賽，累積分數最高者拿下記憶王座。",
+      "主畫面（手機同步）閃出一串四色方塊，盯緊了！閃完後在手機上照著順序點完整串，點完才一次判定，按錯還能退一格。每過一關都是全新序列，長度再加一格、絕不重播舊題目，答錯本輪出局。三輪比賽，累積分數最高者拿下記憶王座。",
     minPlayers: 3,
     maxPlayers: 20,
     estimatedDuration: "5-10 分鐘",
@@ -236,7 +236,7 @@ export const GAMES: GameDefinition[] = [
     tags: ["記憶", "專注", "淘汰"],
     difficulty: "中等",
     rules: [
-      "大螢幕閃出的顏色順序要記住",
+      "主畫面閃出的顏色順序要記住",
       "閃完後在手機上照順序點完整串（點完才送出）",
       "按錯了可以按「退一格」修正",
       "每過一關，序列會多一個顏色",
@@ -250,7 +250,7 @@ export const GAMES: GameDefinition[] = [
     nameEn: "Word Chain",
     description: "用上一個詞的最後一字接新詞，手快有！",
     longDescription:
-      "大螢幕顯示一個詞，用它的「最後一字」開頭接出 2-4 個字的新詞，第一個有效接龍者得 10 分並成為新詞。不確定那是不是真詞？5 秒內按「異議」，全場投票判定！被推翻扣分、成功異議加分。",
+      "主畫面顯示一個詞，用它的「最後一字」開頭接出 2-4 個字的新詞，第一個有效接龍者得 10 分並成為新詞。不確定那是不是真詞？5 秒內按「異議」，全場投票判定！被推翻扣分、成功異議加分。",
     minPlayers: 3,
     maxPlayers: 20,
     estimatedDuration: "5-12 分鐘",
@@ -261,7 +261,7 @@ export const GAMES: GameDefinition[] = [
     tags: ["語言", "搶答", "投票"],
     difficulty: "中等",
     rules: [
-      "用大螢幕詞的最後一字開頭接新詞（2-4 個中文字）",
+      "用主畫面詞的最後一字開頭接新詞（2-4 個中文字）",
       "第一個有效接龍者 +10 分，新詞成為新的接龍點",
       "同一詞不能重複用",
       "5 秒內可按「異議」，全場投票判定該詞有效與否",
@@ -274,7 +274,7 @@ export const GAMES: GameDefinition[] = [
     nameEn: "Brain Teasers",
     description: "機車題目四選一，腦筋轉最快的贏！",
     longDescription:
-      "大螢幕出一題腦筋急轉彎（例如：什麼東西越洗越髒？），所有人在手機四選一搶答。答對得分，越快越多，全場第一個答對還有加碼！題庫 30 多題，每場隨機。",
+      "主畫面出一題腦筋急轉彎（例如：什麼東西越洗越髒？），所有人在手機四選一搶答。答對得分，越快越多，全場第一個答對還有加碼！題庫 30 多題，每場隨機。",
     minPlayers: 2,
     maxPlayers: 20,
     estimatedDuration: "5-10 分鐘",
@@ -285,7 +285,7 @@ export const GAMES: GameDefinition[] = [
     tags: ["急轉彎", "搶答", "搞笑"],
     difficulty: "簡單",
     rules: [
-      "大螢幕顯示題目，手機四選一",
+      "主畫面顯示題目，手機四選一",
       "每題只能選一次，想清楚再按",
       "答對 +10，越快最高再 +10",
       "全場第一個答對再 +5",
@@ -296,9 +296,9 @@ export const GAMES: GameDefinition[] = [
     id: "followme",
     name: "跟著做",
     nameEn: "Follow Me",
-    description: "電視喊什麼就做什麼，比誰反應最快！",
+    description: "畫面喊什麼就做什麼，比誰反應最快！",
     longDescription:
-      "大螢幕輪流閃出四種指令：拍手、跺腳、舉手、喊「派對」！看到指令，一邊真的做出動作，一邊在手機搶按正確的按鈕。按得越快分數越高，連續答對還有連擊加分；按錯扣分、連擊歸零。指令會越出越快，撐到最後總分最高的人就是全場手感之王！規則十秒講完，長輩小孩都能立刻開玩。",
+      "主畫面輪流閃出四種指令：拍手、跺腳、舉手、喊「派對」！看到指令，一邊真的做出動作，一邊在手機搶按正確的按鈕。按得越快分數越高，連續答對還有連擊加分；按錯扣分、連擊歸零。指令會越出越快，撐到最後總分最高的人就是全場手感之王！規則十秒講完，長輩小孩都能立刻開玩。",
     minPlayers: 3,
     maxPlayers: 20,
     estimatedDuration: "2-4 分鐘",
@@ -309,7 +309,7 @@ export const GAMES: GameDefinition[] = [
     tags: ["反應", "節奏", "歡樂"],
     difficulty: "簡單",
     rules: [
-      "看大螢幕閃出的指令，例如「👏 拍手！」",
+      "看主畫面閃出的指令，例如「👏 拍手！」",
       "一邊真的做出動作，一邊在手機按下對應按鈕，一題只要按一下",
       "越快按對分數越高；連續答對 3 題起每題再 +5",
       "按錯 −5 分、連擊歸零；沒按到 0 分",

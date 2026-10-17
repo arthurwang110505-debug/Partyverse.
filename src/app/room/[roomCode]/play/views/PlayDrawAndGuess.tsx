@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { PlayShell } from "@/components/game/PlayShell";
 import { useGameViewState } from "@/hooks/useGameViewState";
+import { usesBigScreen } from "@/lib/stage";
 import { vibrate } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
@@ -92,6 +93,8 @@ export default function PlayDrawAndGuess() {
   const promptCategory =
     state.prompt?.category || (state as { promptCategory?: string }).promptCategory || "";
   const promptLen = Array.from(promptWord).length;
+  // Without a big screen the drawing has to be on the guessers' phones.
+  const showCanvas = !usesBigScreen(room) && !amDrawer;
 
   const flush = (current: ActiveStroke) => {
     if (timer.current) {
@@ -206,7 +209,9 @@ export default function PlayDrawAndGuess() {
             <p className="text-sm leading-relaxed text-white/70">
               {amDrawer
                 ? "用圖畫表達，別寫出答案！每有人猜中，你得 5 分。"
-                : "看大螢幕的畫作，在手機輸入答案。越早猜中，得分越高！"}
+                : showCanvas
+                  ? "畫作馬上出現在下面，看圖輸入答案。越早猜中，得分越高！"
+                  : "看主畫面的畫作，在手機輸入答案。越早猜中，得分越高！"}
             </p>
           </section>
         )}
@@ -234,6 +239,13 @@ export default function PlayDrawAndGuess() {
                 </>
               )}
             </header>
+            {showCanvas && (
+              <DrawingCanvas
+                aria-label={`${room.players[state.drawerPlayerId]?.nickname ?? "畫家"} 的畫作`}
+                className="aspect-square w-full rounded-2xl border-2 border-white/20 bg-slate-950"
+                strokes={state.strokes}
+              />
+            )}
             {amDrawer ? (
               <>
                 <div className="flex gap-1 overflow-x-auto pb-1" aria-label="畫筆顏色">
@@ -306,7 +318,7 @@ export default function PlayDrawAndGuess() {
                     ? "畫布已滿，請復原或清除後繼續。"
                     : syncing
                       ? "正在同步畫筆…"
-                      : "邊畫邊同步到大螢幕 · 可在畫布外放開手指"}
+                      : "邊畫邊同步到主畫面 · 可在畫布外放開手指"}
                 </p>
               </>
             ) : solved ? (
@@ -328,7 +340,7 @@ export default function PlayDrawAndGuess() {
                 }}
               >
                 <label htmlFor="draw-guess" className="block text-sm text-white/70">
-                  看看大螢幕，你猜這是什麼？
+                  {showCanvas ? "看看這幅畫，你猜這是什麼？" : "看看主畫面，你猜這是什麼？"}
                 </label>
                 <input
                   id="draw-guess"

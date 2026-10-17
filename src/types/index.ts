@@ -10,6 +10,21 @@ export type Category = (typeof CATEGORIES)[keyof typeof CATEGORIES];
 
 export type GameStatus = "LOBBY" | "PLAYING" | "RESULTS";
 
+/**
+ * How the host seat is set up when a room is created.
+ *
+ * - `play`    — phone host who also plays (a normal player with host powers)
+ * - `referee` — phone host who only runs the party (display seat, sees the stage)
+ * - `tv`      — a big screen / projector as the display seat (the original mode)
+ */
+export type HostMode = "play" | "referee" | "tv";
+
+/**
+ * Where the shared "stage" lives. `phones`: there is no shared screen, so every
+ * phone mirrors the stage itself. `tv`: a big screen shows it.
+ */
+export type ScreenMode = "phones" | "tv";
+
 export interface Player {
   id: string;
   nickname: string;
@@ -93,6 +108,11 @@ export interface Room<S = Record<string, unknown>> {
   settings: RoomSettings;
   players: Record<string, Player>;
   gameState: S;
+  /**
+   * Where the shared stage is shown. Absent on rooms created before phone
+   * hosting existed; see `usesBigScreen` for how those are interpreted.
+   */
+  screenMode?: ScreenMode;
   /** Ephemeral reactions broadcast from player controllers */
   reactions?: Record<string, ReactionItem>;
   /** Server timestamp written by the authoritative tick, used to detect a stalled host. */

@@ -112,7 +112,7 @@ export function startRoomGame(room: Room, now = Date.now()): Room {
     .map((p) => p.id);
   const game = GAMES.find((entry) => entry.id === room.gameId);
   if (ids.length < (game?.minPlayers ?? 2))
-    throw new Error(`至少需要 ${game?.minPlayers ?? 2} 位手機玩家才能開始（電視不計入）`);
+    throw new Error(`至少需要 ${game?.minPlayers ?? 2} 位玩家才能開始（大螢幕不計入）`);
   if (ids.length > (game?.maxPlayers ?? 20)) throw new Error(`這款遊戲最多支援 ${game?.maxPlayers ?? 20} 位玩家`);
   const current: Room = { ...room, settings: normalizeSettings(room.gameId, room.settings), participantIds: ids };
   const { finishedAt: _finished, privateHost: _ph, private: _pv, ...base } = current;
@@ -289,6 +289,35 @@ export function claimRoomHost(room: Room, userId: string, expectedHostId: string
     lastTickAt: now,
     players: Object.fromEntries(Object.entries(room.players).map(([id, p]) => [id, { ...p, isHost: id === userId }])),
   };
+}
+
+/**
+ * Is the host's device no longer driving the room?
+ *
+ * Disconnected hosts are always "gone". While a game runs the host also has to
+ * keep ticking, so a frozen-but-connected phone (locked screen, dead socket the
+ * server has not noticed yet) counts once its heartbeat is older than
+ * `HOST_STALE_MS`.
+ */
+export function hostIsGone(room: Room, now: number): boolean {
+  const host = room.players?.[room.hostPlayerId];
+  if (!host || host.isConnected === false) return true;
+  return room.status === "PLAYING" && now - (room.lastTickAt ?? now) > HOST_STALE_MS;
+}
+
+/**
+ * Position of `userId` in the line of succession for a dropped host (0 = next),
+ * or -1 when they cannot inherit the room.
+ *
+ * Only connected, non-display players qualify, ordered by id so every phone
+ * computes the same line without talking to the others.
+ */
+export function successorRank(room: Room, userId: string): number {
+  const line = Object.values(room.players ?? {})
+    .filter((p) => p.id !== room.hostPlayerId && p.role !== "display" && p.isConnected !== false)
+    .map((p) => p.id)
+    .sort();
+  return line.indexOf(userId);
 }
 
 /** Bind taps to a poker decision or word challenge, even within the same phase. */

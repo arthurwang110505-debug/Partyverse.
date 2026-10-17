@@ -172,7 +172,7 @@ export default function PlayWordChain() {
             <h1 className="text-2xl font-black text-white">
               {state.winnerId === player.id ? "你就是接龍高手！" : "比賽結束！"}
             </h1>
-            <p className="mt-2 text-sm text-white/60">排名看大螢幕。</p>
+            <p className="mt-2 text-sm text-white/60">排名看主畫面。</p>
           </>
         )}
       </div>
