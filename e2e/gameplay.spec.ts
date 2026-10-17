@@ -184,7 +184,10 @@ test("a phone can take over a stale host and keep its controller", async ({ page
   await page.goto(`/room/${room.id}/play`);
   await page.getByRole("button", { name: "由我接管房主" }).click();
   await expect.poll(async () => (await readRoom(page, room.id)).hostPlayerId).toBe("p1");
+  // The new host's phone gets the host menu (the TV's bottom bar does not exist here).
+  await page.getByRole("button", { name: "主持人選單" }).click();
   await expect(page.getByRole("button", { name: "結束並結算", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "由我接管房主" })).toHaveCount(0);
   await expect.poll(async () => (await readRoom(page, room.id)).gameState.phase).toBe("reveal");
 });

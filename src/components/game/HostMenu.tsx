@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { Crown, Power, RotateCcw, Share2, Flag, X } from "lucide-react";
@@ -30,7 +30,13 @@ export function HostMenu({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [pending, setPending] = useState(false);
+  const confirmRef = useRef<HTMLDivElement>(null);
   const [origin, setOrigin] = useState("");
+
+  // The confirmation sits at the bottom of a scrolling sheet; bring it into view.
+  useEffect(() => {
+    if (confirm) confirmRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [confirm]);
   useEffect(() => setOrigin(window.location.origin), []);
 
   // The TV itself needs no menu; a phone that inherited a TV room's host seat does.
@@ -191,6 +197,7 @@ export function HostMenu({ className }: { className?: string }) {
 
         {confirm && (
           <div
+            ref={confirmRef}
             role="alertdialog"
             aria-label="確認操作"
             className="mt-4 rounded-2xl border border-red-500/30 bg-red-950/40 p-4 text-center"
